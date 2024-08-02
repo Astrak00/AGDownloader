@@ -12,11 +12,19 @@ jobs:
   build-macos:
     name: build-macos
     
-    runs-on: macos-latest
-   
     strategy:
       matrix:
-        go-version: [ '1.20', '1.22.5' ]
+        # macos-12: amd64 (oldest supported version as of 05-02-2024)
+        # macos-14: arm64 (oldest arm64 version)
+        os: [macos-12, macos-14]
+        include:
+          - os: macos-12
+            goarch: amd64
+          - os: macos-14
+            goarch: arm64
+        go-version: [ '1.20', '1.22.4' ]
+
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v4
@@ -29,6 +37,6 @@ jobs:
         run: go version
 
       - name: Build
-        run: go build -v -o agdownloader main.go
+        run: go build -v main.go
 
     
