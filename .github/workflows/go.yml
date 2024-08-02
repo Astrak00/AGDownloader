@@ -17,8 +17,8 @@ jobs:
         # macos-14: arm64 (oldest arm64 version)
         os: [macos-12, macos-14]
         include:
-          - os: macos-12
-            goarch: amd64
+          #- os: macos-12
+          #  goarch: amd64
           - os: macos-14
             goarch: arm64
     runs-on: ${{ matrix.os }}
