@@ -35,7 +35,7 @@ jobs:
         run: go get .
 
       - name: Build
-        run: go build -v -o my-binary-${{ matrix.os }}-${{ matrix.goarch }}
+        run: go build -v -o agdownloader-${{ matrix.os }}-${{ matrix.goarch }}
 
       - name: Create Release
         id: create_release
