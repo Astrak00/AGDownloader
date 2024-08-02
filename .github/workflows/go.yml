@@ -57,6 +57,11 @@ jobs:
       - name: List files in binaries directory
         run: ls -laR ./binaries
 
+      - name: Zip all binaries
+        run: |
+          cd binaries
+          zip -r agdownloader-binaries.zip agdownloader-*
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -68,12 +73,12 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Upload Release Assets
+      - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./binaries/agdownloader-*/**
-          asset_name: agdownloader-${{ matrix.os }}-${{ matrix.arch }}
-          asset_content_type: application/octet-stream
+          asset_path: ./binaries/agdownloader-binaries.zip
+          asset_name: agdownloader-binaries.zip
+          asset_content_type: application/zip
