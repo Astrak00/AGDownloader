@@ -30,9 +30,7 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Configure Go modules
-      run: |
-        go env -w GO111MODULE=on
-        go mod tidy
+      run: go env -w GO111MODULE=on && go mod tidy
 
     - name: Set up environment
       run: |
