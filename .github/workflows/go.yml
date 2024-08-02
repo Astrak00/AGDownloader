@@ -29,8 +29,10 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v3
 
-    - name: Configure Go modules
-      run: go env -w GO111MODULE=on && go mod tidy
+    - name: Set Go environment variables
+      run: |
+        echo "GO111MODULE=on" >> $GITHUB_ENV
+        echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
 
     - name: Set up environment
       run: |
