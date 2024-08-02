@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: build
+    name: Build
 
     runs-on: ubuntu-latest
 
@@ -37,29 +37,41 @@ jobs:
       - name: Build
         run: go build -v -o agdownloader-${{ matrix.os }}-${{ matrix.arch }}
 
+      - name: Upload binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: agdownloader-${{ matrix.os }}-${{ matrix.arch }}
+          path: agdownloader-${{ matrix.os }}-${{ matrix.arch }}
+
+  create_release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Download binaries
+        uses: actions/download-artifact@v3
+        with:
+          name: agdownloader
+          path: .
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         with:
-          tag_name: v1.2.${{ github.run_number }} # Example tag format
-          release_name: Release v1.1.${{ github.run_number }}
+          tag_name: v1.2.${{ github.run_number }}  # Example tag format
+          release_name: Release v1.2.${{ github.run_number }}
           draft: false
           prerelease: false
 
-      - name: Upload Release Asset
+      - name: Upload Release Assets
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./agdownloader-${{ matrix.os }}-${{ matrix.arch }}
+          asset_path: ./agdownloader-*
           asset_name: agdownloader-${{ matrix.os }}-${{ matrix.arch }}
           asset_content_type: application/octet-stream
-
-      - name: Upload binaries
-        uses: actions/upload-artifact@v3
-        with:
-          name: agdownloader
-          path: agdownloader-*
