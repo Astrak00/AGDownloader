@@ -6,9 +6,9 @@ on:
       - main  # Change this to the branch you want to build on push
 
 jobs:
-  build-macos:
-    name: build-macos
-    
+  build:
+    name: build
+
     runs-on: ubuntu-latest
 
     strategy:
@@ -18,11 +18,12 @@ jobs:
         exclude:
           - os: windows-latest
             arch: arm64
-
+        go-version: [1.20]
 
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Go ${{ matrix.go-version }}
+
+      - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
@@ -31,10 +32,21 @@ jobs:
         run: go version
 
       - name: Install dependencies
-        run: go get .
+        run: go mod tidy
 
       - name: Build
-        run: go build -v -o agdownloader-${{ matrix.os }}-${{ matrix.goarch }}
+        run: go build -v -o agdownloader-${{ matrix.os }}-${{ matrix.arch }}
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.sha }}
+          release_name: Release ${{ github.sha }}
+          draft: false
+          prerelease: false
 
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
@@ -42,13 +54,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./agdownloader-${{ matrix.os }}-${{ matrix.goarch }}
-          asset_name: agdownloader-${{ matrix.os }}-${{ matrix.goarch }}
+          asset_path: ./agdownloader-${{ matrix.os }}-${{ matrix.arch }}
+          asset_name: agdownloader-${{ matrix.os }}-${{ matrix.arch }}
           asset_content_type: application/octet-stream
 
       - name: Upload binaries
         uses: actions/upload-artifact@v3
         with:
           name: agdownloader
-          path: |
-            agdownloader_*
+          path: agdownloader_*
