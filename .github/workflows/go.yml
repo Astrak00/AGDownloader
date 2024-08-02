@@ -43,7 +43,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         with:
-          tag_name: v1.1.${{ github.run_number }} # Example tag format
+          tag_name: v1.2.${{ github.run_number }} # Example tag format
           release_name: Release v1.1.${{ github.run_number }}
           draft: false
           prerelease: false
