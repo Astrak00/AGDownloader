@@ -36,6 +36,11 @@ jobs:
       - name: Display Go version
         run: go version
 
+      - name: Install dependencies
+        run: go get .
+      - name: Build
+        run: go build -v ./...
+
       #- name: Build
       #  run: go build -v main.go
 
