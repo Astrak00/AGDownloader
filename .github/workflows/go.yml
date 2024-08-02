@@ -54,6 +54,9 @@ jobs:
         with:
           path: ./binaries  # Ensure this directory is created and used
 
+      - name: List files
+        run: ls -la ./binaries
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
