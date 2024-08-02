@@ -179,6 +179,6 @@ func GetUserInfo(token string) (string, string, error) {
 	fullname := string(body)[start+28 : start+end]
 	// fmt.Println("User ID:", fullname)
 
-	fmt.Printf("Your User ID: %s, %s\n", userID, fullname)
+	fmt.Printf("Your User: %s\n", fullname)
 	return userID, fullname, nil
 }
