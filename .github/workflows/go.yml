@@ -29,6 +29,11 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v3
 
+    - name: Configure Go modules
+      run: |
+        go env -w GO111MODULE=on
+        go mod tidy
+
     - name: Set up environment
       run: |
         echo "GOOS=$(echo ${{ matrix.os }} | awk -F'-' '{print $1}')" >> $GITHUB_ENV
