@@ -1,11 +1,12 @@
 package main
 
 import (
-	courseParser "100472175/AGDownloader/functions"
 	"flag"
 	"fmt"
 	"sync"
 	"time"
+
+	courseParser "github.com/100472175/AGDownloader/functions"
 
 	"github.com/fatih/color"
 )

@@ -1,4 +1,4 @@
-module 100472175/AGDownloader
+module github.com/100472175/AGDownloader
 
 go 1.22.4
 

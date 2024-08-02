@@ -39,9 +39,11 @@ jobs:
           echo "EXT=" >> $GITHUB_ENV
         fi
 
+    - name: Install dependencies
+      run: go get .
+
     - name: Build
-      run: |
-        go build -o myprogram_${{ env.GOOS }}_${{ env.GOARCH }}${{ env.EXT }} .
+      run: go build -o myprogram_${{ env.GOOS }}_${{ env.GOARCH }}${{ env.EXT }} .
 
     - name: Upload binaries
       uses: actions/upload-artifact@v3
