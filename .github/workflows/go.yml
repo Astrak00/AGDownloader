@@ -5,9 +5,8 @@ name: Go-build-macos
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches:
+      - main  # Change this to the branch you want to build on push
 
 jobs:
   build-macos:
