@@ -1,4 +1,4 @@
-package parser
+package functions
 
 import (
 	"encoding/xml"
@@ -146,4 +146,39 @@ func GetCourseContent(token, courseID string) ([]Module, error) {
 	}
 
 	return modules, nil
+}
+
+func GetUserInfo(token string) (string, string, error) {
+	urlInfo := fmt.Sprintf("https://%s%s?wstoken=%s&wsfunction=core_webservice_get_site_info", domain, webservice, token)
+	resp, err := http.Get(urlInfo)
+	if err != nil {
+		return "", "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", "", err
+	}
+
+	if strings.Contains(string(body), "invalidtoken") {
+		return "", "", fmt.Errorf("Invalid Token")
+	}
+	fmt.Println("Token is valid")
+
+	// Get the user ID
+	start := strings.Index(string(body), "<KEY name=\"username\"><VALUE>")
+	end := strings.Index(string(body)[start:], "</VALUE>")
+	userID := string(body)[start+28 : start+end]
+	// fmt.Println("User ID:", userID)
+
+	// Get the user full name
+	// Get the user ID
+	start = strings.Index(string(body), "<KEY name=\"fullname\"><VALUE>")
+	end = strings.Index(string(body)[start:], "</VALUE>")
+	fullname := string(body)[start+28 : start+end]
+	// fmt.Println("User ID:", fullname)
+
+	fmt.Printf("Your User ID: %s, %s\n", userID, fullname)
+	return userID, fullname, nil
 }
