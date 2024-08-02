@@ -1,7 +1,7 @@
 package main
 
 import (
-	courseParser "AGDownloader/functions"
+	courseParser "100472175/AGDownloader/functions"
 	"flag"
 	"fmt"
 	"sync"
@@ -35,7 +35,7 @@ func main() {
 
 	token := *token_ptr
 	directory := *directory_ptr
-	if *help_flag_ptr {
+	if *help_flag_ptr || token == "00" {
 		fmt.Println("Usage: AGDownloader --token <token> --directory <directory>")
 		color.Yellow("To obtain the token, you need to log in to Aula Global and go to the preferences panel. There, select security keys and copy or regenerate if expired, the \"aulaglobalmovil\" key.")
 		return

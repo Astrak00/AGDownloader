@@ -1,4 +1,4 @@
-module AGDownloader
+module 100472175/AGDownloader
 
 go 1.22.4
 
