@@ -69,22 +69,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         with:
           tag_name: v1.2.${{ github.run_number }}
-          release_name: Release v1.1.${{ github.run_number }}
+          release_name: Release v1.2.${{ github.run_number }}
           draft: false
           prerelease: false
 
       - name: Upload Release Asset
-        uses: jaywcjlove/github-action-upload-assets@v1.1.1
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         with:
-          token: ${{ secrets.PAT_TOKEN }}
-          tag: v1.1.${{ github.run_number }}
-          asset-path: |
-            /home/runner/work/AGDownloader/AGDownloader/binaries/agdownloader-macos-latest-amd64
-            /home/runner/work/AGDownloader/AGDownloader/binaries/agdownloader-macos-latest-arm64
-            /home/runner/work/AGDownloader/AGDownloader/binaries/agdownloader-ubuntu-latest-amd64
-            /home/runner/work/AGDownloader/AGDownloader/binaries/agdownloader-ubuntu-latest-arm64
-            /home/runner/work/AGDownloader/AGDownloader/binaries/agdownloader-windows-latest-amd64
-         
-
-
-          
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./binaries/agdownloader-binaries.zip
+          asset_name: agdownloader-binaries.zip
+          asset_content_type: application/zip
