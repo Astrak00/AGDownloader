@@ -79,11 +79,11 @@ jobs:
           token: ${{ secrets.PAT_TOKEN }}
           tag: v1.1.${{ github.run_number }}
           asset-path: |
-            ./binaries/agdownloader-macos-latest-amd64
-            ./binaries/agdownloader-macos-latest-arm64
-            ./binaries/agdownloader-ubuntu-latest-amd64
-            ./binaries/agdownloader-ubuntu-latest-arm64
-            ./binaries/agdownloader-windows-latest-amd64
+            /home/runner/work/AGDownloader/AGDownloader/binaries/agdownloader-macos-latest-amd64
+            /home/runner/work/AGDownloader/AGDownloader/binaries/agdownloader-macos-latest-arm64
+            /home/runner/work/AGDownloader/AGDownloader/binaries/agdownloader-ubuntu-latest-amd64
+            /home/runner/work/AGDownloader/AGDownloader/binaries/agdownloader-ubuntu-latest-arm64
+            /home/runner/work/AGDownloader/AGDownloader/binaries/agdownloader-windows-latest-amd64
          
 
 
