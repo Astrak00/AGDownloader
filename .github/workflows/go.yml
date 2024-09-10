@@ -77,6 +77,14 @@ jobs:
         uses: jaywcjlove/github-action-upload-assets@v1.1.1
         with:
           token: ${{ secrets.PAT_TOKEN }}
-          asset-path: '["./binaries/agdownloader-*"]'
-          tag: v1.2.${{ github.run_number }}
+          tag: v1.1.${{ github.run_number }}
+          asset-path: |
+            ./binaries/agdownloader-macos-latest-amd64
+            ./binaries/agdownloader-macos-latest-arm64
+            ./binaries/agdownloader-ubuntu-latest-amd64
+            ./binaries/agdownloader-ubuntu-latest-arm64
+            ./binaries/agdownloader-windows-latest-amd64
+         
+
+
           
