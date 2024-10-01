@@ -12,8 +12,10 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/fatih/color"
+	"github.com/schollz/progressbar/v3"
 )
 
 const (
@@ -305,7 +307,6 @@ func parseFlags() (int, string, string, int) {
 	dir := flag.String("d", "courses", "Introduce the directory where you want to save the files")
 	cores := flag.Int("c", runtime.NumCPU()-1, "Introduce the cores to use in the download")
 	flag.Parse()
-	fmt.Println("Cores:", *cores)
 
 	if *language == 0 {
 		fmt.Println("Introduce tu idioma: 1: Español, 2:English")
@@ -344,6 +345,23 @@ func promptForToken(language int) string {
 func downloadFiles(filesStoreChan <-chan FileStore, maxGoroutines int) {
 	var wg sync.WaitGroup
 	semaphore := make(chan struct{}, maxGoroutines)
+	totalFiles := len(filesStoreChan)
+
+	// Create an atomic counter for completed files
+	var completedFiles int32
+
+	bar := progressbar.NewOptions(totalFiles,
+		progressbar.OptionEnableColorCodes(true),
+		progressbar.OptionShowBytes(false),
+		progressbar.OptionSetWidth(20),
+		progressbar.OptionSetPredictTime(false),
+		progressbar.OptionSetTheme(progressbar.Theme{
+			Saucer:        "[green]=[reset]",
+			SaucerHead:    "[green]>[reset]",
+			SaucerPadding: " ",
+			BarStart:      "[",
+			BarEnd:        "]",
+		}))
 
 	for fileStore := range filesStoreChan {
 		wg.Add(1)
@@ -351,12 +369,38 @@ func downloadFiles(filesStoreChan <-chan FileStore, maxGoroutines int) {
 			defer wg.Done()
 			semaphore <- struct{}{}
 			defer func() { <-semaphore }()
-
-			if err := downloadFile(fileStore); err != nil {
+			if err := downloadFileWithProgress(fileStore, bar, &completedFiles); err != nil {
 				fmt.Printf("Error downloading file %s: %v\n", fileStore.FileName, err)
 			}
 		}(fileStore)
 	}
-
 	wg.Wait()
+}
+
+func downloadFileWithProgress(fileStore FileStore, bar *progressbar.ProgressBar, completedFiles *int32) error {
+	resp, err := http.Get(fileStore.FileURL)
+	if err != nil {
+		return fmt.Errorf("error downloading the file: %v", err)
+	}
+	defer resp.Body.Close()
+
+	dir := filepath.Dir(fileStore.Dir)
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return fmt.Errorf("error creating the directory: %v", err)
+	}
+
+	out, err := os.Create(fileStore.Dir)
+	if err != nil {
+		return fmt.Errorf("error creating the file: %v", err)
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		return fmt.Errorf("error copying the file: %v", err)
+	}
+
+	atomic.AddInt32(completedFiles, 1)
+	bar.Add(1)
+	return nil
 }
