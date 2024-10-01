@@ -15,7 +15,7 @@ go build -o agdownloader main.go
 To use AGDownloader, you will need to run the following command:
 
 ```bash
-./agdownloader -t <token> -d <directory>
+./agdownloader -l <language:1\|2> -t <token> -d <directory>
 ```
 
 Where `<token>` is the token you can get from the preferences panel and `<directory>` is the directory where you want to download the files.
