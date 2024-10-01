@@ -4,13 +4,14 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/fatih/color"
 )
@@ -125,18 +126,15 @@ func getCourses(token, userID string) ([]Course, error) {
 /*
 Parses the course for available files and sends them to the channel to be downloaded
 */
-func processCourse(course Course, userToken string, dirPath string, errChan chan<- error, filesStoreChan chan<- FileStore, wg *sync.WaitGroup) {
+func processCourse(course Course, userToken string, dirPath string, errChan chan<- error, filesStoreChan chan<- FileStore) {
 	//fmt.Printf("Course: %s\n", course.Name)
 	files, err := getCourseContent(userToken, course.ID)
 	if err != nil {
 		errChan <- fmt.Errorf("error getting course content: %v", err)
 	}
 	if len(files) > 0 {
-		a := time.Now()
 		catalogFiles(course.Name, userToken, files, dirPath, filesStoreChan)
-		color.Green("catalog %d Files took: %v\n", len(files), time.Since(a))
 	}
-	wg.Done()
 }
 
 /*
@@ -243,104 +241,41 @@ func downloadFile(fileStore FileStore) error {
 }
 
 func main() {
-	blue := color.New(color.FgBlue, color.Bold, color.Underline).SprintFunc()
-	red := color.New(color.FgRed).SprintFunc()
-	fmt.Println("Download UC3M Aula Global files from Command Line using 'aulaglobalmovil' Security key")
-
-	// Parse the flags with flag package
-	// -l for language
-	// -t for token
-	// -d for directory
-
-	var nFlag = flag.Int("l", 1, "Choose your language / Escoga su Idioma: 1: Español, 2:English.")
-	var tFlag = flag.String("t", "", "Introduce your Aula Global user security token 'aulaglobalmovil'")
-	var dFlag = flag.String("d", "courses", "Introduce the directory where you want to save the files")
-	var cFlag = flag.Int("c", 7, "Introduce the cores to use in the download")
-
-	flag.Parse()
-
-	var language int
-	if *nFlag != 1 && *nFlag != 2 {
-		for language != 1 && language != 2 {
-			fmt.Println("Choose your language / Escoga su Idioma:")
-			fmt.Print("1: Español, 2:English. :")
-			_, err := fmt.Scanf("%d", &language)
-			if err != nil {
-				fmt.Println(red("Wrong input value / Valor introducido erroneo. Intentelo de nuevo"))
-			}
-			fmt.Println()
-		}
-	} else {
-		language = *nFlag
-	}
-
-	var userToken string = *tFlag
-	var dirPath string = *dFlag
-	var done bool = false
-	if userToken != "" {
-		done = true
-	}
-	if dirPath == "" {
-		dirPath = "courses"
-	}
-
-	for !done {
-		if language == 1 {
-			fmt.Println("Introduzca el token de seguridad de su usuario de Aula Global 'aulaglobalmovil':")
-			fmt.Printf("Para ver las instrucciones para generar el token ve a: %s\n", blue("https://github.com/Josersanvil/AulaGlobal-CoursesFiles#para-conseguir-el-token-de-seguridad"))
-			fmt.Print("Introduzca su token se seguridad: ")
-		} else {
-			fmt.Println("Introduce your Aula Global user security token 'aulaglobalmovil':")
-			fmt.Printf("To see instructions on how to generate the token go to: %s\n", blue("https://github.com/Josersanvil/AulaGlobal-CoursesFiles#get-your-token"))
-			fmt.Print("Introduce your security token: ")
-		}
-
-		fmt.Scanf("%s", &userToken)
-
-		if userToken != "" && regexp.MustCompile(`[a-zA-Z0-9]{20,}`).MatchString(userToken) && len(userToken) > 20 {
-			done = true
-		} else {
-			if language == 1 {
-				fmt.Println(red("El token introducido no parece estar correcto. Intentalo de nuevo."))
-			} else {
-				fmt.Println(red("The given token does not seem to be right. Please try again."))
-			}
-		}
-		fmt.Println()
-	}
+	language, userToken, dirPath, maxGoroutines := parseFlags()
 
 	if language == 1 {
-		fmt.Println("Descargando los archivos a la carpeta", blue(dirPath))
+		color.Cyan("Programa creado por Astrak00: github.com/Astrak00/AGDownloader/ para descargar archivos de Aula Global en la UC3M\n")
+		fmt.Println("Descargando los archivos a la carpeta", color.BlueString(dirPath))
 	} else {
-		fmt.Println("Downloading files to the folder", blue(dirPath))
+		color.Cyan("Program created by Astrak00: github.com/Astrak00/AGDownloader/ to download files from Aula Global at UC3M\n")
+		fmt.Println("Downloading files to the folder", color.BlueString(dirPath))
 	}
 
 	user, err := getUserInfo(userToken)
 	if err != nil {
-		if language == 1 {
-			fmt.Println(red("Error: Token invalido, el token podria haber expirado o es erroneo. Chequea que esta escrito correctamente o generara uno nuevo en 'aulaglobal.uc3m.es' > perfil."))
-		} else {
-			fmt.Println(red("Error: Invalid Token, the token may have expired or has a typo. Check if it's written correctly or generate a new one in 'aulaglobal.uc3m.es' > profile."))
-		}
-		os.Exit(1)
+		log.Fatalf("Error: Invalid Token: %v", err)
 	}
 
 	courses, err := getCourses(userToken, user.UserID)
 	if err != nil {
-		fmt.Printf("Error getting courses: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("Error getting courses: %v\n", err)
 	}
+
+	filesStoreChan := make(chan FileStore, len(courses)*20)
+	errChan := make(chan error, len(courses))
 
 	var wg sync.WaitGroup
-	errChan := make(chan error, len(courses))
-	filesStoreChan := make(chan FileStore, len(courses)*20)
-
 	for _, course := range courses {
 		wg.Add(1)
-		go processCourse(course, userToken, dirPath, chan<- error(errChan), chan<- FileStore(filesStoreChan), &wg)
+		go func(course Course) {
+			defer wg.Done()
+			processCourse(course, userToken, dirPath, chan<- error(errChan), chan<- FileStore(filesStoreChan))
+		}(course)
 	}
+
 	wg.Wait()
 	close(errChan)
+	close(filesStoreChan)
 
 	for err := range errChan {
 		if err != nil {
@@ -348,52 +283,80 @@ func main() {
 		}
 	}
 
-	close(filesStoreChan)
-	color.Red("Found %d items to download\n", len(filesStoreChan))
-
-	// Create the directory to store the files
-	err = os.MkdirAll(dirPath, 0755)
-	if err != nil {
-		fmt.Printf("Error creating the directory: %v\n", err)
-		os.Exit(1)
+	if language == 1 {
+		color.Red("Se han encontrado %d archivos para descargar\n", len(filesStoreChan))
+	} else {
+		color.Red("Found %d items to download\n", len(filesStoreChan))
 	}
 
-	// Create a subdirectory for each course
-	for _, course := range courses {
-		courseName := strings.ReplaceAll(course.Name, "/", "-")
-		if len(courseName) > 55 {
-			courseName = courseName[:55]
+	downloadFiles(filesStoreChan, maxGoroutines)
+
+	if language == 1 {
+		color.Green("Descarga completada\n")
+	} else {
+		color.Green("Download completed\n")
+	}
+
+}
+
+func parseFlags() (int, string, string, int) {
+	language := flag.Int("l", 0, "Choose your language: 1: Español, 2:English")
+	token := flag.String("t", "", "Introduce your Aula Global user security token 'aulaglobalmovil'")
+	dir := flag.String("d", "courses", "Introduce the directory where you want to save the files")
+	cores := flag.Int("c", runtime.NumCPU()-1, "Introduce the cores to use in the download")
+	flag.Parse()
+	fmt.Println("Cores:", *cores)
+
+	if *language == 0 {
+		fmt.Println("Introduce tu idioma: 1: Español, 2:English")
+		fmt.Scanf("%d", language)
+	}
+
+	if *token == "" {
+		*token = promptForToken(*language)
+	}
+
+	return *language, *token, *dir, *cores
+}
+
+func promptForToken(language int) string {
+	var token string
+	for {
+		if language == 1 {
+			fmt.Println("Introduzca el token de seguridad de su usuario de Aula Global 'aulaglobalmovil':")
+		} else {
+			fmt.Println("Introduce your Aula Global user security token 'aulaglobalmovil':")
+		}
+		fmt.Scanf("%s", &token)
+
+		if token != "" && regexp.MustCompile(`[a-zA-Z0-9]{20,}`).MatchString(token) && len(token) > 20 {
+			return token
 		}
 
-		courseDir := filepath.Join(dirPath, courseName)
-		err = os.MkdirAll(courseDir, 0755)
-		if err != nil {
-			fmt.Printf("Error creating the directory: %v\n", err)
-			os.Exit(1)
+		if language == 1 {
+			color.Red("El token introducido no parece estar correcto. Inténtelo de nuevo.")
+		} else {
+			color.Red("The given token does not seem to be right. Please try again.")
 		}
 	}
-	color.Green("Downloading files...\n")
+}
 
-	// Download the files from the channel by goroutines
-	maxGoroutines := *cFlag
-	var wg2 sync.WaitGroup
-	errChan2 := make(chan error, len(courses)*20)
+func downloadFiles(filesStoreChan <-chan FileStore, maxGoroutines int) {
+	var wg sync.WaitGroup
 	semaphore := make(chan struct{}, maxGoroutines)
 
 	for fileStore := range filesStoreChan {
-		semaphore <- struct{}{} // Acquire a slot
-		wg2.Add(1)
+		wg.Add(1)
 		go func(fileStore FileStore) {
-			defer wg2.Done()
-			defer func() { <-semaphore }() // Release the slot
+			defer wg.Done()
+			semaphore <- struct{}{}
+			defer func() { <-semaphore }()
 
-			err := downloadFile(fileStore)
-			if err != nil {
-				errChan2 <- err
+			if err := downloadFile(fileStore); err != nil {
+				fmt.Printf("Error downloading file %s: %v\n", fileStore.FileName, err)
 			}
 		}(fileStore)
 	}
 
-	wg2.Wait()
-	close(errChan2)
+	wg.Wait()
 }
