@@ -8,15 +8,26 @@ on:
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [macos, ubuntu, windows]
-        arch: [amd64, arm64]
-        exclude:
-          - os: windows
-            arch: arm64
+        include:
+          - os: macos-latest
+            goos: darwin
+            goarch: amd64
+          - os: macos-latest
+            goos: darwin
+            goarch: arm64
+          - os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+          - os: ubuntu-latest
+            goos: linux
+            goarch: arm64
+          - os: windows-latest
+            goos: windows
+            goarch: amd64
         go-version: [1.22.x]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Go
@@ -29,19 +40,20 @@ jobs:
         run: go mod tidy
       - name: Build
         env:
-          GOOS: ${{ matrix.os }}
-          GOARCH: ${{ matrix.arch }}
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
         run: |
-          if [ "${{ matrix.os }}" = "windows" ]; then
-            go build -v -o agdownloader-${{ matrix.os }}-${{ matrix.arch }}.exe
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            go build -v -o agdownloader-${{ matrix.goos }}-${{ matrix.goarch }}.exe
           else
-            go build -v -o agdownloader-${{ matrix.os }}-${{ matrix.arch }}
+            go build -v -o agdownloader-${{ matrix.goos }}-${{ matrix.goarch }}
           fi
+        shell: bash
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: agdownloader-${{ matrix.os }}-${{ matrix.arch }}
-          path: agdownloader-${{ matrix.os }}-${{ matrix.arch }}*
+          name: agdownloader-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: agdownloader-${{ matrix.goos }}-${{ matrix.goarch }}*
 
   create_release:
     name: Create Release
