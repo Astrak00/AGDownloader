@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/fatih/color"
 )
@@ -30,10 +31,6 @@ type Course struct {
 	ID   string
 }
 
-type Courses struct {
-	Courses []Course
-}
-
 type File struct {
 	FileName string
 	FileURL  string
@@ -50,22 +47,22 @@ type FileStore struct {
 /*
 Gets the userID necessary to get the courses
 */
-func getUserInfo(token string) (string, error) {
+func getUserInfo(token string) (UserInfo, error) {
 	url := fmt.Sprintf("https://%s%s?wstoken=%s&wsfunction=core_webservice_get_site_info", domain, webservice, token)
 
 	resp, err := http.Get(url)
 	if err != nil {
-		return "", err
+		return UserInfo{}, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return UserInfo{}, err
 	}
 
 	if strings.Contains(string(body), "invalidtoken") {
-		return "", fmt.Errorf("invalid token")
+		return UserInfo{}, fmt.Errorf("invalid token")
 	}
 
 	var userInfo UserInfo
@@ -89,7 +86,7 @@ func getUserInfo(token string) (string, error) {
 	}
 
 	//color.Blue("Your User ID: %s, %s\n", userInfo.UserID, userInfo.FullName)
-	return userInfo.UserID, nil
+	return userInfo, nil
 }
 
 /*
@@ -107,7 +104,7 @@ func getCourses(token, userID string) ([]Course, error) {
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("mismatch in course names and IDs")
 	}
 
 	// Find the course names and ids with two regex and then join them into a Course struct
@@ -116,29 +113,30 @@ func getCourses(token, userID string) ([]Course, error) {
 	names := courseNames.FindAllStringSubmatch(string(body), -1)
 	ids := courseIDs.FindAllStringSubmatch(string(body), -1)
 
-	var courses Courses
-	courses.Courses = make([]Course, 0, len(names))
-
+	courses := make([]Course, 0, len(names))
 	for i, name := range names {
-		courses.Courses = append(courses.Courses, Course{Name: name[1], ID: ids[i][1]})
+		courses = append(courses, Course{Name: name[1], ID: ids[i][1]})
 	}
+	color.Green("Courses found: %d\n", len(courses))
 
-	color.Green("Courses found: %d\n", len(courses.Courses))
-
-	return courses.Courses, nil
+	return courses, nil
 }
 
 /*
 Parses the course for available files and sends them to the channel to be downloaded
 */
-func processCourse(course Course, userToken string, dirPath string, errChan chan<- error, filesStoreChan chan<- FileStore) {
-	fmt.Printf("Course: %s\n", course.Name)
+func processCourse(course Course, userToken string, dirPath string, errChan chan<- error, filesStoreChan chan<- FileStore, wg *sync.WaitGroup) {
+	//fmt.Printf("Course: %s\n", course.Name)
 	files, err := getCourseContent(userToken, course.ID)
 	if err != nil {
-		fmt.Printf("Error getting course content: %v\n", err)
-		errChan <- err
+		errChan <- fmt.Errorf("error getting course content: %v", err)
 	}
-	catalogFiles(course.Name, userToken, files, dirPath, filesStoreChan)
+	if len(files) > 0 {
+		a := time.Now()
+		catalogFiles(course.Name, userToken, files, dirPath, filesStoreChan)
+		color.Green("catalog %d Files took: %v\n", len(files), time.Since(a))
+	}
+	wg.Done()
 }
 
 /*
@@ -150,7 +148,6 @@ func getCourseContent(token, courseID string) ([]File, error) {
 	//color.Cyan("URL: %s\n", url)
 
 	resp, err := http.Get(url)
-
 	if err != nil {
 		return nil, err
 	}
@@ -160,6 +157,7 @@ func getCourseContent(token, courseID string) ([]File, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	// Find the file names, urls and types with regex
 	fileNames := regexp.MustCompile(`<KEY name="filename"><VALUE>([^<]+)</VALUE>`)
@@ -176,8 +174,7 @@ func getCourseContent(token, courseID string) ([]File, error) {
 	types := fileTypes.FindAllStringSubmatch(string(body), -1)
 
 	// Join the names and urls into a File struct
-	var files []File
-	files = make([]File, 0, len(names))
+	files := make([]File, 0, len(names))
 
 	for i := range names {
 		if names[i][1] == "structure" {
@@ -188,10 +185,11 @@ func getCourseContent(token, courseID string) ([]File, error) {
 	}
 	for i, name := range names {
 		if types[i][1] == "file" {
-			name_ := name[1]
-			type_ := types[i][1]
-			url_ := urls[i][1]
-			files = append(files, File{FileName: name_, FileURL: url_, FileType: type_})
+			files = append(files, File{
+				FileName: name[1],
+				FileURL:  urls[i][1],
+				FileType: types[i][1],
+			})
 		}
 	}
 	// color.Red("Files found: %d\n", len(files))
@@ -203,19 +201,14 @@ func getCourseContent(token, courseID string) ([]File, error) {
 Formats the files to be downloaded, adding the course name and sends them to the channel
 */
 func catalogFiles(courseName string, token string, files []File, dirPath string, filesStoreChan chan<- FileStore) {
-	for i, file := range files {
-		var url string
-		if i == 0 {
-			url = file.FileURL
-		} else {
-			url = file.FileURL + "&token=" + token
-		}
+	for _, file := range files {
+		url := file.FileURL + "&token=" + token
 
+		// Replace the "/" in the course name to avoid creating subdirectories
 		courseName = strings.ReplaceAll(courseName, "/", "-")
-		filePath_short := filepath.Join(dirPath, courseName)
-		// Join the filePath_short with the filename to create the full path
-		filePath := filepath.Join(filePath_short, file.FileName)
+		filePath := filepath.Join(dirPath, courseName, file.FileName)
 
+		// Send the file to the channel
 		filesStoreChan <- FileStore{FileName: file.FileName, FileURL: url, FileType: file.FileType, Dir: filePath}
 	}
 }
@@ -224,43 +217,28 @@ func downloadFile(fileStore FileStore) error {
 	filePath := fileStore.Dir
 	fileURL := fileStore.FileURL
 
-	err := downloadFileFromURL(fileURL, filePath)
+	resp, err := http.Get(fileURL)
 	if err != nil {
-		fmt.Printf("Error downloading the file: %v\n", err)
-		return err
-	}
-	return nil
-}
-
-func downloadFileFromURL(url, filePath string) error {
-	resp, err := http.Get(url)
-	if err != nil {
-		fmt.Printf("Couldn't download this file. %v\n", err)
-		return err
+		return fmt.Errorf("error downloading the file: %v", err)
 	}
 	defer resp.Body.Close()
 
 	// Create the directory path if it doesn't exist
 	dir := filepath.Dir(filePath)
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-		color.Red("Couldn't create directory: %v\n", err)
-		return err
+		return fmt.Errorf("error creating the directory: %v", err)
 	}
 
 	out, err := os.Create(filePath)
 	if err != nil {
-		fmt.Printf("Couldn't create the file: %v\n", err)
-		return err
+		return fmt.Errorf("error creating the file: %v", err)
 	}
 	defer out.Close()
 
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
-		fmt.Printf("Couldn't copy the file: %v\n", err)
-		return err
+		return fmt.Errorf("error copying the file: %v", err)
 	}
-
-	//fmt.Printf("Downloaded file: %s\n", filePath)
 	return nil
 }
 
@@ -337,7 +315,7 @@ func main() {
 		fmt.Println("Downloading files to the folder", blue(dirPath))
 	}
 
-	userID, err := getUserInfo(userToken)
+	user, err := getUserInfo(userToken)
 	if err != nil {
 		if language == 1 {
 			fmt.Println(red("Error: Token invalido, el token podria haber expirado o es erroneo. Chequea que esta escrito correctamente o generara uno nuevo en 'aulaglobal.uc3m.es' > perfil."))
@@ -347,7 +325,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	courses, err := getCourses(userToken, userID)
+	courses, err := getCourses(userToken, user.UserID)
 	if err != nil {
 		fmt.Printf("Error getting courses: %v\n", err)
 		os.Exit(1)
@@ -355,24 +333,11 @@ func main() {
 
 	var wg sync.WaitGroup
 	errChan := make(chan error, len(courses))
-	filesStoreChan := make(chan FileStore, 250)
+	filesStoreChan := make(chan FileStore, len(courses)*20)
 
 	for _, course := range courses {
 		wg.Add(1)
-		go func(course Course) {
-			defer wg.Done()
-			var (
-				userToken string = userToken
-				dirPath   string = dirPath
-			)
-			fmt.Printf("Course: %s\n", course.Name)
-			files, err := getCourseContent(userToken, course.ID)
-			if err != nil {
-				fmt.Printf("Error getting course content: %v\n", err)
-				chan<- error(errChan) <- err
-			}
-			catalogFiles(course.Name, userToken, files, dirPath, chan<- FileStore(filesStoreChan))
-		}(course)
+		go processCourse(course, userToken, dirPath, chan<- error(errChan), chan<- FileStore(filesStoreChan), &wg)
 	}
 	wg.Wait()
 	close(errChan)
