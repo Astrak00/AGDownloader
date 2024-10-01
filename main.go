@@ -40,7 +40,13 @@ type File struct {
 	FileType string
 }
 
-// DONE
+type FileStore struct {
+	FileName string
+	FileURL  string
+	FileType string
+	Dir      string
+}
+
 /*
 Gets the userID necessary to get the courses
 */
@@ -86,7 +92,6 @@ func getUserInfo(token string) (string, error) {
 	return userInfo.UserID, nil
 }
 
-// DONE
 /*
 Gets the courses, both name and ID, of a given userID
 */
@@ -123,9 +128,21 @@ func getCourses(token, userID string) ([]Course, error) {
 	return courses.Courses, nil
 }
 
-// Done
 /*
-Gets the course content, both name, url and type, of a given courseID
+Parses the course for available files and sends them to the channel to be downloaded
+*/
+func processCourse(course Course, userToken string, dirPath string, errChan chan<- error, filesStoreChan chan<- FileStore) {
+	fmt.Printf("Course: %s\n", course.Name)
+	files, err := getCourseContent(userToken, course.ID)
+	if err != nil {
+		fmt.Printf("Error getting course content: %v\n", err)
+		errChan <- err
+	}
+	catalogFiles(course.Name, userToken, files, dirPath, filesStoreChan)
+}
+
+/*
+Parses the course and returns the files of type "file"
 */
 func getCourseContent(token, courseID string) ([]File, error) {
 	url := fmt.Sprintf("https://%s%s?wstoken=%s&wsfunction=core_course_get_contents&courseid=%s", domain, webservice, token, courseID)
@@ -152,7 +169,7 @@ func getCourseContent(token, courseID string) ([]File, error) {
 	names := fileNames.FindAllStringSubmatch(string(body), -1)
 	// If no files are found, return nil and prevent further execution and useless processing
 	if len(names) == 0 {
-		color.Red("No files found\n")
+		// color.Red("No files found\n")
 		return nil, nil
 	}
 	urls := fileURLs.FindAllStringSubmatch(string(body), -1)
@@ -177,71 +194,15 @@ func getCourseContent(token, courseID string) ([]File, error) {
 			files = append(files, File{FileName: name_, FileURL: url_, FileType: type_})
 		}
 	}
-	color.Red("Files found: %d\n", len(files))
+	// color.Red("Files found: %d\n", len(files))
 
 	return files, nil
 }
 
-func saveFiles(token, courseName string, files []File, dirPath string) error {
-	courseName = strings.ReplaceAll(courseName, "/", "_")
-	if len(courseName) > 55 {
-		courseName = courseName[:55]
-	}
-
-	if dirPath == "" {
-		dirPath = filepath.Join("cursos", courseName)
-	} else {
-		dirPath = filepath.Join(dirPath, courseName)
-	}
-
-	err := os.MkdirAll(dirPath, 0755)
-	if err != nil {
-		return err
-	}
-
-	// If there are more than 25 files, divide the download in two parts to run them in parallel
-	if len(files) > 20 {
-		const n = 7 // Define the number of splits
-		var wg sync.WaitGroup
-		errChan := make(chan error, len(files))
-
-		chunkSize := (len(files) + n - 1) / n // Calculate the size of each chunk
-
-		for i := 0; i < n; i++ {
-			start := i * chunkSize
-			end := start + chunkSize
-			if end > len(files) {
-				end = len(files)
-			}
-
-			wg.Add(1)
-			go func(filesChunk []File) {
-				defer wg.Done()
-				err := downloadFiles(token, filesChunk, dirPath)
-				if err != nil {
-					errChan <- err
-				}
-			}(files[start:end])
-		}
-
-		wg.Wait()
-		close(errChan)
-
-		for err := range errChan {
-			if err != nil {
-				return err
-			}
-		}
-	} else {
-		err := downloadFiles(token, files, dirPath)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func downloadFiles(token string, files []File, dirPath string) error {
+/*
+Formats the files to be downloaded, adding the course name and sends them to the channel
+*/
+func catalogFiles(courseName string, token string, files []File, dirPath string, filesStoreChan chan<- FileStore) {
 	for i, file := range files {
 		var url string
 		if i == 0 {
@@ -250,35 +211,62 @@ func downloadFiles(token string, files []File, dirPath string) error {
 			url = file.FileURL + "&token=" + token
 		}
 
-		filePath := filepath.Join(dirPath, strings.ReplaceAll(file.FileName, "/", "_"))
-		//fmt.Printf("\nDownloading file to: %s\n", filePath)
+		courseName = strings.ReplaceAll(courseName, "/", "-")
+		filePath_short := filepath.Join(dirPath, courseName)
+		// Join the filePath_short with the filename to create the full path
+		filePath := filepath.Join(filePath_short, file.FileName)
 
-		resp, err := http.Get(url)
-		if err != nil {
-			fmt.Printf("Couldn't download this file. %v\n", err)
-			continue
-		}
-		defer resp.Body.Close()
+		filesStoreChan <- FileStore{FileName: file.FileName, FileURL: url, FileType: file.FileType, Dir: filePath}
+	}
+}
 
-		out, err := os.Create(filePath)
-		if err != nil {
-			return err
-		}
-		defer out.Close()
+func downloadFile(fileStore FileStore) error {
+	filePath := fileStore.Dir
+	fileURL := fileStore.FileURL
 
-		_, err = io.Copy(out, resp.Body)
-		if err != nil {
-			return err
-		}
+	err := downloadFileFromURL(fileURL, filePath)
+	if err != nil {
+		fmt.Printf("Error downloading the file: %v\n", err)
+		return err
+	}
+	return nil
+}
+
+func downloadFileFromURL(url, filePath string) error {
+	resp, err := http.Get(url)
+	if err != nil {
+		fmt.Printf("Couldn't download this file. %v\n", err)
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Create the directory path if it doesn't exist
+	dir := filepath.Dir(filePath)
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		color.Red("Couldn't create directory: %v\n", err)
+		return err
 	}
 
+	out, err := os.Create(filePath)
+	if err != nil {
+		fmt.Printf("Couldn't create the file: %v\n", err)
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		fmt.Printf("Couldn't copy the file: %v\n", err)
+		return err
+	}
+
+	//fmt.Printf("Downloaded file: %s\n", filePath)
 	return nil
 }
 
 func main() {
 	blue := color.New(color.FgBlue, color.Bold, color.Underline).SprintFunc()
 	red := color.New(color.FgRed).SprintFunc()
-
 	fmt.Println("Download UC3M Aula Global files from Command Line using 'aulaglobalmovil' Security key")
 
 	// Parse the flags with flag package
@@ -289,6 +277,7 @@ func main() {
 	var nFlag = flag.Int("l", 1, "Choose your language / Escoga su Idioma: 1: Español, 2:English.")
 	var tFlag = flag.String("t", "", "Introduce your Aula Global user security token 'aulaglobalmovil'")
 	var dFlag = flag.String("d", "courses", "Introduce the directory where you want to save the files")
+	var cFlag = flag.Int("c", 7, "Introduce the cores to use in the download")
 
 	flag.Parse()
 
@@ -366,12 +355,23 @@ func main() {
 
 	var wg sync.WaitGroup
 	errChan := make(chan error, len(courses))
+	filesStoreChan := make(chan FileStore, 250)
 
 	for _, course := range courses {
 		wg.Add(1)
 		go func(course Course) {
 			defer wg.Done()
-			getDownloadCourses(course, userToken, dirPath, errChan)
+			var (
+				userToken string = userToken
+				dirPath   string = dirPath
+			)
+			fmt.Printf("Course: %s\n", course.Name)
+			files, err := getCourseContent(userToken, course.ID)
+			if err != nil {
+				fmt.Printf("Error getting course content: %v\n", err)
+				chan<- error(errChan) <- err
+			}
+			catalogFiles(course.Name, userToken, files, dirPath, chan<- FileStore(filesStoreChan))
 		}(course)
 	}
 	wg.Wait()
@@ -382,18 +382,53 @@ func main() {
 			fmt.Println("Error:", err)
 		}
 	}
-}
 
-func getDownloadCourses(course Course, userToken string, dirPath string, errChan chan<- error) {
-	fmt.Printf("Course: %s\n", course.Name)
-	files, err := getCourseContent(userToken, course.ID)
+	close(filesStoreChan)
+	color.Red("Found %d items to download\n", len(filesStoreChan))
+
+	// Create the directory to store the files
+	err = os.MkdirAll(dirPath, 0755)
 	if err != nil {
-		fmt.Printf("Error getting course content: %v\n", err)
-		errChan <- err
+		fmt.Printf("Error creating the directory: %v\n", err)
+		os.Exit(1)
 	}
-	err = saveFiles(userToken, course.Name, files, dirPath)
-	if err != nil {
-		fmt.Printf("Error saving files: %v\n", err)
-		errChan <- err
+
+	// Create a subdirectory for each course
+	for _, course := range courses {
+		courseName := strings.ReplaceAll(course.Name, "/", "-")
+		if len(courseName) > 55 {
+			courseName = courseName[:55]
+		}
+
+		courseDir := filepath.Join(dirPath, courseName)
+		err = os.MkdirAll(courseDir, 0755)
+		if err != nil {
+			fmt.Printf("Error creating the directory: %v\n", err)
+			os.Exit(1)
+		}
 	}
+	color.Green("Downloading files...\n")
+
+	// Download the files from the channel by goroutines
+	maxGoroutines := *cFlag
+	var wg2 sync.WaitGroup
+	errChan2 := make(chan error, len(courses)*20)
+	semaphore := make(chan struct{}, maxGoroutines)
+
+	for fileStore := range filesStoreChan {
+		semaphore <- struct{}{} // Acquire a slot
+		wg2.Add(1)
+		go func(fileStore FileStore) {
+			defer wg2.Done()
+			defer func() { <-semaphore }() // Release the slot
+
+			err := downloadFile(fileStore)
+			if err != nil {
+				errChan2 <- err
+			}
+		}(fileStore)
+	}
+
+	wg2.Wait()
+	close(errChan2)
 }
