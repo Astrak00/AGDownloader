@@ -8,9 +8,7 @@ on:
 jobs:
   build:
     name: Build
-
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]

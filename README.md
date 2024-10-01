@@ -2,24 +2,46 @@
 
 AGDownloader is a simple and easy-to-use downloader for AulaGlobal (the use of moodle by the University Carlos III of Madrid). It is a command-line tool that allows you to download all the files from all the courses a user has access to.
 
-## Installation
-
-To install AGDownloader, you will need to compile it from source using go. You can do this by running the following command:
-
-```bash
-go build
-```
 
 ## Usage
 
-To use AGDownloader, you will need to run the following command:
+To use AGDownloader, execute the following command:
 
 ```bash
-./AGDownloader -l <language=1|2> -t <token> -d <directory> -c <num_cores>
+./AGDownloader 
+```
+You can specify some parameters to customize the download process but if you don't the program will ask you for them (except for the parameters that have a default value).
+
+```bash
+./AGDownloader -h
+
+Usage of ./AGDownloader:
+  -c int
+        Introduce the cores to use in the download (default 7)
+  -d string
+        Introduce the directory where you want to save the files (default "courses")
+  -l int
+        Choose your language: 1: Español, 2:English
+  -t string
+        Introduce your Aula Global user security token 'aulaglobalmovil'
 ```
 
-Where `<token>` is the token you can get from the preferences panel and `<directory>` is the directory where you want to download the files.
-`<num_cores>` is the number of cores you want to use to download the files. If you don't specify this parameter, the program will use all the cores available.
+Here, `<token>` is the token available in the preferences panel, and `<directory>` specifies the location where you want to save the downloaded files. The `<num_cores>` parameter indicates how many cores you wish to allocate for the download. If you do not provide this, the program will utilize all available cores minus one.
+
+### Obtaining the token
+
+To obtain the token, you must log in to AulaGlobal and go to the preferences panel. There, you will find the token under the "Security keys" section. Copy the token and paste it into the program when prompted.
+
+![Retrieving token](assets/instructions-token.gif)
+
+## Build from source
+
+To build the program from source, you will need to have Go installed on your computer. You can download it from the [official website](https://golang.org/). Once you have installed Go, you can clone the repository and build the program by running the following commands:
+
+```bash
+git clone git@github.com:Astrak00/AGDownloader.git
+go build
+```
 
 
 ## Contributing
