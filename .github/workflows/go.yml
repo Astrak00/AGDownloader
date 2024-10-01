@@ -1,4 +1,4 @@
-name: Go-build-and-release
+name: Go-build-macos
 
 on:
   push:
@@ -8,62 +8,60 @@ on:
 jobs:
   build:
     name: Build
+
+    runs-on: ubuntu-latest
+
     strategy:
       matrix:
-        include:
-          - os: macos-latest
-            goos: darwin
-            goarch: amd64
-          - os: macos-latest
-            goos: darwin
-            goarch: arm64
-          - os: ubuntu-latest
-            goos: linux
-            goarch: amd64
-          - os: ubuntu-latest
-            goos: linux
-            goarch: arm64
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        arch: [amd64, arm64]
+        exclude:
           - os: windows-latest
-            goos: windows
-            goarch: amd64
+            arch: arm64
         go-version: [1.22.x]
-    runs-on: ${{ matrix.os }}
+
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
+
       - name: Display Go version
         run: go version
+
       - name: Install dependencies
         run: go mod tidy
+
       - name: Build
-        env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-        run: |
-          if [ "${{ matrix.goos }}" = "windows" ]; then
-            go build -v -o agdownloader-${{ matrix.goos }}-${{ matrix.goarch }}.exe
-          else
-            go build -v -o agdownloader-${{ matrix.goos }}-${{ matrix.goarch }}
-          fi
-        shell: bash
-      - name: Upload artifact
+        run: go build -v -o agdownloader-${{ matrix.os }}-${{ matrix.arch }}
+
+      - name: Upload binaries
         uses: actions/upload-artifact@v3
         with:
-          name: agdownloader-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: agdownloader-${{ matrix.goos }}-${{ matrix.goarch }}*
+          name: agdownloader-${{ matrix.os }}-${{ matrix.arch }}
+          path: agdownloader-${{ matrix.os }}-${{ matrix.arch }}
 
   create_release:
     name: Create Release
     runs-on: ubuntu-latest
     needs: build
+
     steps:
-      - name: Download artifacts
+      - name: Download binaries
         uses: actions/download-artifact@v3
         with:
-          path: ./artifacts
+          path: ./binaries
+
+      - name: List files in binaries directory
+        run: ls -laR ./binaries
+
+      - name: Zip all binaries
+        run: |
+          cd binaries
+          zip -r agdownloader-binaries.zip agdownloader-*
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -74,15 +72,13 @@ jobs:
           release_name: Release v1.2.${{ github.run_number }}
           draft: false
           prerelease: false
-      - name: Upload Release Assets
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
-        run: |
-          for file in ./artifacts/*/*; do
-            asset_name=$(basename "$file")
-            echo "Uploading $asset_name"
-            curl -H "Authorization: token $GITHUB_TOKEN" \
-                 -H "Content-Type: application/octet-stream" \
-                 --data-binary @"$file" \
-                 "${{ steps.create_release.outputs.upload_url }}?name=$asset_name"
-          done
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./binaries/agdownloader-binaries.zip
+          asset_name: agdownloader-binaries.zip
+          asset_content_type: application/zip
