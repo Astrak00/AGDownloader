@@ -4,3 +4,4 @@ courses
 courses_test
 AGDownloader
 dist
+.DS_Store
