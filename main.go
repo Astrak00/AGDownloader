@@ -1,7 +1,7 @@
 package main
 
 import (
-	"flag"
+	"bufio"
 	"fmt"
 	"io"
 	"log"
@@ -9,13 +9,14 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
 
 	"github.com/fatih/color"
 	"github.com/schollz/progressbar/v3"
+	"github.com/spf13/pflag"
+	flag "github.com/spf13/pflag"
 )
 
 const (
@@ -97,7 +98,6 @@ Gets the courses, both name and ID, of a given userID
 */
 func getCourses(token, userID string) ([]Course, error) {
 	url := fmt.Sprintf("https://%s%s?wstoken=%s&wsfunction=core_enrol_get_users_courses&userid=%s", domain, webservice, token, userID)
-	color.Yellow("Getting courses...\n")
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -120,8 +120,6 @@ func getCourses(token, userID string) ([]Course, error) {
 	for i, name := range names {
 		courses = append(courses, Course{Name: name[1], ID: ids[i][1]})
 	}
-	color.Green("Courses found: %d\n", len(courses))
-
 	return courses, nil
 }
 
@@ -213,135 +211,6 @@ func catalogFiles(courseName string, token string, files []File, dirPath string,
 	}
 }
 
-func downloadFile(fileStore FileStore) error {
-	filePath := fileStore.Dir
-	fileURL := fileStore.FileURL
-
-	resp, err := http.Get(fileURL)
-	if err != nil {
-		return fmt.Errorf("error downloading the file: %v", err)
-	}
-	defer resp.Body.Close()
-
-	// Create the directory path if it doesn't exist
-	dir := filepath.Dir(filePath)
-	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-		return fmt.Errorf("error creating the directory: %v", err)
-	}
-
-	out, err := os.Create(filePath)
-	if err != nil {
-		return fmt.Errorf("error creating the file: %v", err)
-	}
-	defer out.Close()
-
-	_, err = io.Copy(out, resp.Body)
-	if err != nil {
-		return fmt.Errorf("error copying the file: %v", err)
-	}
-	return nil
-}
-
-func main() {
-	language, userToken, dirPath, maxGoroutines := parseFlags()
-
-	if language == 1 {
-		color.Cyan("Programa creado por Astrak00: github.com/Astrak00/AGDownloader/ para descargar archivos de Aula Global en la UC3M\n")
-		fmt.Println("Descargando los archivos a la carpeta", color.BlueString(dirPath))
-	} else {
-		color.Cyan("Program created by Astrak00: github.com/Astrak00/AGDownloader/ to download files from Aula Global at UC3M\n")
-		fmt.Println("Downloading files to the folder", color.BlueString(dirPath))
-	}
-
-	user, err := getUserInfo(userToken)
-	if err != nil {
-		log.Fatalf("Error: Invalid Token: %v", err)
-	}
-
-	courses, err := getCourses(userToken, user.UserID)
-	if err != nil {
-		log.Fatalf("Error getting courses: %v\n", err)
-	}
-
-	filesStoreChan := make(chan FileStore, len(courses)*20)
-	errChan := make(chan error, len(courses))
-
-	var wg sync.WaitGroup
-	for _, course := range courses {
-		wg.Add(1)
-		go func(course Course) {
-			defer wg.Done()
-			processCourse(course, userToken, dirPath, chan<- error(errChan), chan<- FileStore(filesStoreChan))
-		}(course)
-	}
-
-	wg.Wait()
-	close(errChan)
-	close(filesStoreChan)
-
-	for err := range errChan {
-		if err != nil {
-			fmt.Println("Error:", err)
-		}
-	}
-
-	if language == 1 {
-		color.Red("Se han encontrado %d archivos para descargar\n", len(filesStoreChan))
-	} else {
-		color.Red("Found %d items to download\n", len(filesStoreChan))
-	}
-
-	downloadFiles(filesStoreChan, maxGoroutines)
-
-	if language == 1 {
-		color.Green("Descarga completada\n")
-	} else {
-		color.Green("Download completed\n")
-	}
-
-}
-
-func parseFlags() (int, string, string, int) {
-	language := flag.Int("l", 0, "Choose your language: 1: Español, 2:English")
-	token := flag.String("t", "", "Introduce your Aula Global user security token 'aulaglobalmovil'")
-	dir := flag.String("d", "courses", "Introduce the directory where you want to save the files")
-	cores := flag.Int("c", runtime.NumCPU()-1, "Introduce the cores to use in the download")
-	flag.Parse()
-
-	if *language == 0 {
-		fmt.Println("Introduce tu idioma: 1: Español, 2:English")
-		fmt.Scanf("%d", language)
-	}
-
-	if *token == "" {
-		*token = promptForToken(*language)
-	}
-
-	return *language, *token, *dir, *cores
-}
-
-func promptForToken(language int) string {
-	var token string
-	for {
-		if language == 1 {
-			fmt.Println("Introduzca el token de seguridad de su usuario de Aula Global 'aulaglobalmovil':")
-		} else {
-			fmt.Println("Introduce your Aula Global user security token 'aulaglobalmovil':")
-		}
-		fmt.Scanf("%s", &token)
-
-		if token != "" && regexp.MustCompile(`[a-zA-Z0-9]{20,}`).MatchString(token) && len(token) > 20 {
-			return token
-		}
-
-		if language == 1 {
-			color.Red("El token introducido no parece estar correcto. Inténtelo de nuevo.")
-		} else {
-			color.Red("The given token does not seem to be right. Please try again.")
-		}
-	}
-}
-
 func downloadFiles(filesStoreChan <-chan FileStore, maxGoroutines int) {
 	var wg sync.WaitGroup
 	semaphore := make(chan struct{}, maxGoroutines)
@@ -403,4 +272,217 @@ func downloadFileWithProgress(fileStore FileStore, bar *progressbar.ProgressBar,
 	atomic.AddInt32(completedFiles, 1)
 	bar.Add(1)
 	return nil
+}
+
+func main() {
+	language, userToken, dirPath, maxGoroutines, coursesList := parseFlags()
+
+	if language == 1 {
+		color.Cyan("Programa creado por Astrak00: github.com/Astrak00/AGDownloader/ \n" +
+			"para descargar archivos de Aula Global en la UC3M\n")
+		fmt.Println("Descargando los archivos a la carpeta", dirPath)
+	} else {
+		color.Cyan("Program created by Astrak00: github.com/Astrak00/AGDownloader/ \n" +
+			"to download files from Aula Global at UC3M\n")
+		fmt.Println("Downloading files to the folder", dirPath)
+	}
+
+	user, err := getUserInfo(userToken)
+	if err != nil {
+		log.Fatalf("Error: Invalid Token: %v", err)
+	}
+
+	// Obtain the courses of the user
+	if language == 1 {
+		color.Yellow("Obteniendo cursos...\n")
+	} else {
+		color.Yellow("Getting courses...\n")
+	}
+
+	courses, err := getCourses(userToken, user.UserID)
+	if err != nil {
+		log.Fatalf("Error getting courses: %v\n", err)
+	}
+	if language == 1 {
+		color.Green("Cursos encontrados: %d\n", len(courses))
+	} else {
+		color.Green("Courses found: %d\n", len(courses))
+	}
+
+	filesStoreChan := make(chan FileStore, len(courses)*20)
+	errChan := make(chan error, len(courses))
+
+	// If no courses are given, download all
+	downloadAll := false
+	if len(coursesList) != 0 && coursesList[0] == "" {
+		downloadAll = true
+	} else if len(coursesList) == 0 {
+		coursesList = showCourses(courses, language)
+	} else {
+		if language == 1 {
+			color.Yellow("Se descargarán los cursos que contengan: %v\n", coursesList)
+		} else {
+			color.Yellow("Courses containint: %v will be downloaded\n", coursesList)
+		}
+	}
+
+	// Create a wait group to wait for all the goroutines to finish
+	var wg sync.WaitGroup
+	if downloadAll {
+		for _, course := range courses {
+			wg.Add(1)
+			go func(course Course) {
+				defer wg.Done()
+				processCourse(course, userToken, dirPath, chan<- error(errChan), chan<- FileStore(filesStoreChan))
+			}(course)
+		}
+	} else {
+		for _, course := range courses {
+			for _, courseSearch := range coursesList {
+				if courseSearch == course.ID || strings.Contains(strings.ToLower(course.Name), courseSearch) {
+					wg.Add(1)
+					go func(course Course) {
+						defer wg.Done()
+						processCourse(course, userToken, dirPath, chan<- error(errChan), chan<- FileStore(filesStoreChan))
+					}(course)
+				}
+			}
+		}
+	}
+
+	wg.Wait()
+	close(errChan)
+	close(filesStoreChan)
+
+	for err := range errChan {
+		if err != nil {
+			fmt.Println("Error:", err)
+		}
+	}
+
+	if language == 1 {
+		color.Red("Se han encontrado %d archivos para descargar\n", len(filesStoreChan))
+	} else {
+		color.Red("Found %d items to download\n", len(filesStoreChan))
+	}
+
+	downloadFiles(filesStoreChan, maxGoroutines)
+
+	if language == 1 {
+		color.Green("Descarga completada\n")
+	} else {
+		color.Green("Download completed\n")
+	}
+
+}
+
+func parseFlags() (int, string, string, int, []string) {
+	language := flag.Int("l", 0, "Choose your language: 1: Español, 2:English")
+	token := flag.String("token", "", "Aula Global user security token 'aulaglobalmovil'")
+	dir := flag.String("dir", "", "Directory where you want to save the files")
+	cores := flag.Int("p", 4, "Cores to be used while downloading")
+
+	var courses []string
+	pflag.StringSliceVar(&courses, "courses", []string{}, "Ids or names of the courses to be downloaded, enclosed in \", separated by spaces. \n\"all\" downloads all courses")
+	pflag.Parse()
+
+	if *language == 0 {
+		fmt.Println("Introduce tu idioma: 1: Español, 2:English")
+		fmt.Scanf("%d", language)
+	}
+
+	if *dir == "" {
+		*dir = promptForDir(*language)
+	}
+
+	if *token == "" {
+		*token = promptForToken(*language)
+	}
+
+	// If some courses are given, replace the commas with spaces and split the string
+	if len(courses) == 1 && courses[0] != "" {
+		courses[0] = strings.ReplaceAll(strings.ToLower(courses[0]), ",", " ")
+		courses = strings.Split(courses[0], " ")
+	}
+
+	return *language, *token, *dir, *cores, courses
+}
+
+func promptForToken(language int) string {
+	var token string
+	for {
+		if language == 1 {
+			fmt.Println("Introduzca el token de seguridad de su usuario de Aula Global 'aulaglobalmovil':")
+		} else {
+			fmt.Println("Introduce your Aula Global user security token 'aulaglobalmovil':")
+		}
+		fmt.Scanf("%s", &token)
+
+		if token != "" && regexp.MustCompile(`[a-zA-Z0-9]{20,}`).MatchString(token) && len(token) > 20 {
+			return token
+		}
+
+		if language == 1 {
+			color.Red("El token introducido no parece estar correcto. Inténtelo de nuevo.")
+		} else {
+			color.Red("The given token does not seem to be right. Please try again.")
+		}
+	}
+}
+
+func promptForDir(language int) string {
+	var dir string
+	for {
+		if language == 1 {
+			fmt.Println("Introduzca la ruta donde quiere guardar los archivos:")
+		} else {
+			fmt.Println("Enter the path where you want to save the files:")
+		}
+		fmt.Scanf("%s", &dir)
+
+		if dir != "" {
+			return dir
+		}
+
+		if language == 1 {
+			color.Red("La ruta introducida no parece estar correcta. Inténtelo de nuevo.")
+		} else {
+			color.Red("The given path does not seem to be right. Please try again.")
+		}
+	}
+}
+
+func showCourses(courses []Course, language int) []string {
+
+	if language == 1 {
+		color.Yellow("Cursos disponibles:\n")
+	} else {
+		color.Yellow("Available courses:\n")
+	}
+
+	for _, course := range courses {
+		fmt.Printf("%s -> %s\n", course.ID, course.Name)
+	}
+
+	if language == 1 {
+		color.Yellow("Si quiere descargar todos, pulse enter:\n")
+	} else {
+		color.Yellow("If you want to download all, press enter:\n")
+	}
+	fmt.Print("Enter courses (separated by spaces): ")
+
+	// Create a new scanner to read from standard input
+	scanner := bufio.NewScanner(os.Stdin)
+	// Read the entire line
+	scanner.Scan()
+	coursesStr := scanner.Text()
+
+	// Split the input string into a slice of courses
+	coursesList := strings.Fields(coursesStr)
+
+	for i := range coursesList {
+		coursesList[i] = strings.ToLower(strings.ReplaceAll(strings.TrimSpace(coursesList[i]), ",", ""))
+	}
+
+	return coursesList
 }
