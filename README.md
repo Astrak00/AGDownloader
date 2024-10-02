@@ -5,6 +5,10 @@ AGDownloader is a simple and easy-to-use downloader for AulaGlobal (the use of m
 You can also indicate the courseID or names of the courses you want to download, and the program will only download the files from those courses.
 
 ## Usage
+To download the programm, go to the [releases page](https://github.com/Astrak00/AGDownloader/releases/latest) and download the latest version for your operating system. You can also [build](#build-from-source) the program from source by following the instructions below. 
+> [!NOTE] Key
+> Darwin = MacOS
+> ARM = M1/M2/M3 and Snapdragon
 
 To use AGDownloader, execute the following command:
 
