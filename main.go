@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -380,16 +379,20 @@ func main() {
 func parseFlags() (int, string, string, int, []string) {
 	language := flag.Int("l", 0, "Choose your language: 1: Español, 2:English")
 	token := flag.String("token", "", "Aula Global user security token 'aulaglobalmovil'")
-	dir := flag.String("dir", "courses", "Directory where you want to save the files")
-	cores := flag.Int("p", runtime.NumCPU()-1, "Cores to be used while downloading")
+	dir := flag.String("dir", "", "Directory where you want to save the files")
+	cores := flag.Int("p", 4, "Cores to be used while downloading")
 
 	var courses []string
-	pflag.StringSliceVar(&courses, "courses", []string{}, "Ids or names of the courses you want to download enclosed in \", separated by spaces. \n\"all\" downloads all courses")
+	pflag.StringSliceVar(&courses, "courses", []string{}, "Ids or names of the courses to be downloaded, enclosed in \", separated by spaces. \n\"all\" downloads all courses")
 	pflag.Parse()
 
 	if *language == 0 {
 		fmt.Println("Introduce tu idioma: 1: Español, 2:English")
 		fmt.Scanf("%d", language)
+	}
+
+	if *dir == "" {
+		*dir = promptForDir(*language)
 	}
 
 	if *token == "" {
@@ -427,24 +430,24 @@ func promptForToken(language int) string {
 	}
 }
 
-func promptForCoursesList(language int) string {
-	var courses string
+func promptForDir(language int) string {
+	var dir string
 	for {
 		if language == 1 {
-			fmt.Println("Introduzca los nombres o ids de los cursos que desea descargar, separados por comas:")
+			fmt.Println("Introduzca la ruta donde quiere guardar los archivos:")
 		} else {
-			fmt.Println("Introduce the names or ids of the courses you want to download, separated by commas:")
+			fmt.Println("Enter the path where you want to save the files:")
 		}
-		fmt.Scanf("%s", &courses)
+		fmt.Scanf("%s", &dir)
 
-		if courses != "" {
-			return courses
+		if dir != "" {
+			return dir
 		}
 
 		if language == 1 {
-			color.Red("No se ha introducido ningún curso. Inténtelo de nuevo.")
+			color.Red("La ruta introducida no parece estar correcta. Inténtelo de nuevo.")
 		} else {
-			color.Red("No course has been introduced. Please try again.")
+			color.Red("The given path does not seem to be right. Please try again.")
 		}
 	}
 }

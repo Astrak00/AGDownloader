@@ -17,22 +17,63 @@ You can specify some parameters to customize the download process but if you don
 ./AGDownloader -h
 
 Usage of ./AGDownloader:
-      --courses strings   Ids or names of the courses you want to download enclosed in ", separated by spaces. 
+      --courses strings   Ids or names of the courses to be downloaded, enclosed in ", separated by spaces. 
                           "all" downloads all courses
-      --dir string        Directory where you want to save the files (default "courses")
+      --dir string        Directory where you want to save the files
       --l int             Choose your language: 1: Español, 2:English
-      --p int             Cores to be used while downloading (default 7)
+      --p int             Cores to be used while downloading (default 4)
       --token string      Aula Global user security token 'aulaglobalmovil'
 ```
-
-Here, `<token>` is the token available in the preferences panel, and `<directory>` specifies the location where you want to save the downloaded files. The `<num_cores>` parameter indicates how many cores you wish to allocate for the download. If you do not provide this, the program will utilize all available cores minus one.
-
 
 ### Obtaining the token
 
 To obtain the token, you must log in to AulaGlobal and go to the preferences panel. There, you will find the token under the "Security keys" section. Copy the token and paste it into the program when prompted.
 
 ![Retrieving token](assets/instructions-token.gif)
+
+### Example
+
+This is an example of a full command:
+
+```bash
+./AGDownloader --l 1 --token aaaa1111bbbb2222cccc3333dddd4444 --dir AulaGlobal-Copy --p 5 --courses "Inteligencia Distribuidos 123445"
+```                           
+
+This program will run in Spanish, with the secret token aaaa1111bbbb2222cccc3333dddd4444, in the folder AulaGlobal-Copy inside the folder where the program is being run, using 5 cores, and downloading the courses that contain the words "Inteligencia" or "Distributed" in their name or the course with the ID 123445.
+
+#### Language
+
+You can choose the language in which the program will run by using the `--l` parameter. The possible values are:
+- 1: Spanish
+- 2: English
+
+#### Courses
+
+You can specify the courses you want to download by using the `--courses` parameter. You can specify the courses by their ID or by their name. If you want to download all the courses, you can use the keyword "all".
+
+```
+./AGDownload --courses "Ingeniería Inteligencia"
+```
+This parameter will download all the courses that contain the words "Ingeniería" or "Inteligencia" in their name.
+
+#### Directory
+
+You can specify the directory where you want to save the files by using the `--dir` parameter. You must specify the path to the directory where you want to save the files. If you want to download the files in the same directory where the program is being run, you can put a dot.
+
+```
+./AGDownload --dir .
+```
+
+#### Cores
+
+You can specify the number of cores you want to use while downloading the files by using the `--p` parameter. The default value is 4.
+
+```
+./AGDownload --p 8
+```
+
+
+
 
 
 ## Build from source
@@ -43,6 +84,7 @@ To build the program from source, you will need to have Go installed on your com
 git clone git@github.com:Astrak00/AGDownloader.git
 go build
 ```
+This will create an executable file called AGDownloader that you can run.
 
 
 ## Contributing
