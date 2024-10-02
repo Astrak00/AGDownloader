@@ -318,6 +318,9 @@ func main() {
 		downloadAll = true
 	} else if len(coursesList) == 0 {
 		coursesList = showCourses(courses, language)
+		if len(coursesList) == 0 {
+			downloadAll = true
+		}
 	} else {
 		if language == 1 {
 			color.Yellow("Se descargarán los cursos que contengan: %v\n", coursesList)
@@ -453,7 +456,6 @@ func promptForDir(language int) string {
 }
 
 func showCourses(courses []Course, language int) []string {
-
 	if language == 1 {
 		color.Yellow("Cursos disponibles:\n")
 	} else {
