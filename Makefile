@@ -1,2 +1,2 @@
 build:
-	goreleaser release --snapshot --clean
+	goreleaser release --snapshot 
