@@ -277,21 +277,10 @@ func downloadFileWithProgress(fileStore FileStore, bar *progressbar.ProgressBar,
 func main() {
 	language, userToken, dirPath, maxGoroutines, coursesList := parseFlags()
 
-	if language == 1 {
-		color.Cyan("Programa creado por Astrak00: github.com/Astrak00/AGDownloader/ \n" +
-			"para descargar archivos de Aula Global en la UC3M\n")
-		fmt.Println("Descargando los archivos a la carpeta", dirPath)
-	} else {
-		color.Cyan("Program created by Astrak00: github.com/Astrak00/AGDownloader/ \n" +
-			"to download files from Aula Global at UC3M\n")
-		fmt.Println("Downloading files to the folder", dirPath)
-	}
-
 	user, err := getUserInfo(userToken)
-	if err != nil {
-		log.Fatalf("Error: Invalid Token: %v", err)
+	for err != nil {
+		getUserInfo(promptForToken(language))
 	}
-
 	// Obtain the courses of the user
 	if language == 1 {
 		color.Yellow("Obteniendo cursos...\n")
@@ -314,14 +303,16 @@ func main() {
 
 	// If no courses are given, download all
 	downloadAll := false
-	if len(coursesList) != 0 && coursesList[0] == "" {
+	if len(coursesList) != 0 && coursesList[0] == "all" {
 		downloadAll = true
 	} else if len(coursesList) == 0 {
 		coursesList = showCourses(courses, language)
 		if len(coursesList) == 0 {
 			downloadAll = true
 		}
-	} else {
+	}
+
+	if !downloadAll {
 		if language == 1 {
 			color.Yellow("Se descargarán los cursos que contengan: %v\n", coursesList)
 		} else {
@@ -388,6 +379,14 @@ func parseFlags() (int, string, string, int, []string) {
 	var courses []string
 	pflag.StringSliceVar(&courses, "courses", []string{}, "Ids or names of the courses to be downloaded, enclosed in \", separated by spaces. \n\"all\" downloads all courses")
 	pflag.Parse()
+
+	if *language == 1 {
+		color.Cyan("Programa creado por Astrak00: github.com/Astrak00/AGDownloader/ \n" +
+			"para descargar archivos de Aula Global en la UC3M\n")
+	} else {
+		color.Cyan("Program created by Astrak00: github.com/Astrak00/AGDownloader/ \n" +
+			"to download files from Aula Global at UC3M\n")
+	}
 
 	if *language == 0 {
 		fmt.Println("Introduce tu idioma: 1: Español, 2:English")
