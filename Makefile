@@ -1,5 +1,8 @@
 run:
-	go run main.go --p 7 --l 1 --dir courses
+	go run main.go --p 7 --l 1 --dir courses_temp
+
 build:
+	go build -o bin/AGDownload main.go
+release:
 	goreleaser release --snapshot --clean 
 

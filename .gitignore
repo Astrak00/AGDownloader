@@ -1,7 +1,6 @@
-downloadedCourseFiles
 .venv
-courses
-courses_test
+bin
+courses_temp
 AGDownloader
 dist
 .DS_Store
