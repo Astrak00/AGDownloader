@@ -246,8 +246,6 @@ func catalogFiles(courseName string, token string, files []File, dirPath string,
 	}
 }
 
-<<<<<<< Updated upstream
-=======
 func getCoursesNameByLanguage(courses []Course, language int) []string {
 	coursesList := make([]string, 0, len(courses))
 	for _, course := range courses {
@@ -272,7 +270,6 @@ func checkboxesCourses(label string, opts []string) []string {
 	return res
 }
 
->>>>>>> Stashed changes
 func downloadFiles(filesStoreChan <-chan FileStore, maxGoroutines int) {
 	var wg sync.WaitGroup
 	semaphore := make(chan struct{}, maxGoroutines)
