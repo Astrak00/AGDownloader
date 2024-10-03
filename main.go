@@ -211,6 +211,33 @@ func catalogFiles(courseName string, token string, files []File, dirPath string,
 	}
 }
 
+<<<<<<< Updated upstream
+=======
+func getCoursesNameByLanguage(courses []Course, language int) []string {
+	coursesList := make([]string, 0, len(courses))
+	for _, course := range courses {
+		if language == 1 {
+			coursesList = append(coursesList, course.NameES)
+		} else {
+			coursesList = append(coursesList, course.NameEN)
+		}
+	}
+	return coursesList
+}
+
+func checkboxesCourses(label string, opts []string) []string {
+	res := []string{}
+	prompt := &survey.MultiSelect{
+		Message:  label,
+		Options:  opts,
+		PageSize: 6,
+	}
+	survey.AskOne(prompt, &res, survey.WithKeepFilter(true))
+
+	return res
+}
+
+>>>>>>> Stashed changes
 func downloadFiles(filesStoreChan <-chan FileStore, maxGoroutines int) {
 	var wg sync.WaitGroup
 	semaphore := make(chan struct{}, maxGoroutines)
