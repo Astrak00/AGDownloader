@@ -13,6 +13,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/fatih/color"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/pflag"
@@ -20,9 +21,11 @@ import (
 )
 
 const (
-	domain     = "aulaglobal.uc3m.es"
-	webservice = "/webservice/rest/server.php"
-	service    = "aulaglobal_mobile"
+	domain            = "aulaglobal.uc3m.es"
+	webservice        = "/webservice/rest/server.php"
+	service           = "aulaglobal_mobile"
+	prompt_courses_en = "Select the courses you want to download\n"
+	prompt_courses_es = "Selecciona los cursos que quieres descargar\n"
 )
 
 type UserInfo struct {
@@ -31,8 +34,10 @@ type UserInfo struct {
 }
 
 type Course struct {
-	Name string
-	ID   string
+	Name   string
+	NameES string
+	NameEN string
+	ID     string
 }
 
 type File struct {
@@ -98,7 +103,7 @@ Gets the courses, both name and ID, of a given userID
 */
 func getCourses(token, userID string) ([]Course, error) {
 	url := fmt.Sprintf("https://%s%s?wstoken=%s&wsfunction=core_enrol_get_users_courses&userid=%s", domain, webservice, token, userID)
-
+	color.Red(url)
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -118,9 +123,39 @@ func getCourses(token, userID string) ([]Course, error) {
 
 	courses := make([]Course, 0, len(names))
 	for i, name := range names {
-		courses = append(courses, Course{Name: name[1], ID: ids[i][1]})
+		nameEs, nameEN := getCoursesNamesLanguages(name[1])
+		courses = append(courses, Course{Name: name[1], ID: ids[i][1], NameES: nameEs, NameEN: nameEN})
 	}
 	return courses, nil
+}
+
+func getCoursesNamesLanguages(name string) (string, string) {
+	// Find where the names are separated, by -1C or -2C and return the names in Spanish and English
+	idx := 0
+	if strings.Contains(name, "-1C") {
+		idx = strings.Index(name, "-1C")
+	} else if strings.Contains(name, "-2C") {
+		idx = strings.Index(name, "-2C")
+	} else if strings.Contains(name, "-1S") {
+		idx = strings.Index(name, "-1S")
+	} else if strings.Contains(name, "-2S") {
+		idx = strings.Index(name, "-2S")
+	}
+	if idx != 0 {
+		return name[:idx+3], name[idx+3:]
+	}
+
+	if strings.Contains(name, "Bachelor") {
+		idx = strings.Index(name, "Bachelor")
+		return name[:idx], name[idx:]
+	} else if strings.Contains(name, "Student") {
+		idx = strings.Index(name, "Student")
+		return name[:idx], name[idx:]
+	} else if strings.Contains(name, "Convenio-Bilateral s") {
+		idx = strings.Index(name, "Convenio-Bilateral s")
+		return name[:idx], name[idx:]
+	}
+	return name, name
 }
 
 /*
@@ -319,6 +354,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error getting courses: %v\n", err)
 	}
+
 	if language == 1 {
 		color.Green("Cursos encontrados: %d\n", len(courses))
 	} else {
@@ -330,21 +366,17 @@ func main() {
 
 	// If no courses are given, download all
 	downloadAll := false
+	prompt := ""
+	if language == 1 {
+		prompt = prompt_courses_es
+	} else {
+		prompt = prompt_courses_en
+	}
 	if len(coursesList) != 0 && coursesList[0] == "all" {
 		downloadAll = true
 	} else if len(coursesList) == 0 {
-		coursesList = showCourses(courses, language)
-		if len(coursesList) == 0 {
-			downloadAll = true
-		}
-	}
-
-	if !downloadAll {
-		if language == 1 {
-			color.Yellow("Se descargarán los cursos que contengan: %v\n", coursesList)
-		} else {
-			color.Yellow("Courses containint: %v will be downloaded\n", coursesList)
-		}
+		listCoursesList := getCoursesNameByLanguage(courses, language)
+		coursesList = checkboxesCourses(prompt, listCoursesList)
 	}
 
 	// Create a wait group to wait for all the goroutines to finish
@@ -360,7 +392,7 @@ func main() {
 	} else {
 		for _, course := range courses {
 			for _, courseSearch := range coursesList {
-				if courseSearch == course.ID || strings.Contains(strings.ToLower(course.Name), courseSearch) {
+				if courseSearch == course.ID || strings.Contains(strings.ToLower(course.Name), strings.ToLower(courseSearch)) {
 					wg.Add(1)
 					go func(course Course) {
 						defer wg.Done()
@@ -513,4 +545,17 @@ func showCourses(courses []Course, language int) []string {
 	}
 
 	return coursesList
+}
+
+func trimCoursesList(courses []Course) {
+	// Trim the names of the courses so they are smaller
+	// Here you can configure rules to change the naming of the courses
+	for i, course := range courses {
+		cour := strings.TrimSpace(course.Name)
+		cour = strings.ReplaceAll(cour, " ", "")
+		cour = strings.Replace(cour, "Sala de Estudiantes de Grado", "", -1)
+
+		courses[i].Name = cour
+	}
+
 }
