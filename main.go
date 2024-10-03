@@ -270,7 +270,7 @@ func checkboxesCourses(label string, opts []string) []string {
 	return res
 }
 
-func downloadFiles(filesStoreChan <-chan FileStore, maxGoroutines int) error {
+func downloadFiles(filesStoreChan <-chan FileStore, maxGoroutines int) {
 	var wg sync.WaitGroup
 	semaphore := make(chan struct{}, maxGoroutines)
 	totalFiles := len(filesStoreChan)
