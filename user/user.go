@@ -37,7 +37,7 @@ func GetUserInfo(token string) (types.UserInfo, error) {
 	// Find the fullname key and value
 	fullName := regexp.MustCompile(`<KEY name="fullname"><VALUE>([^<]+)</VALUE>`)
 	maches := fullName.FindStringSubmatch(string(body))
-	if len(maches) > 1 {
+	if len(maches) >= 1 {
 		userInfo.FullName = maches[1]
 	} else {
 		color.Red("Fullname not found\n")

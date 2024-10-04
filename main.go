@@ -5,7 +5,6 @@ import (
 	"log"
 	"regexp"
 	"strings"
-	"sync"
 
 	c "github.com/Astrak00/AGDownloader/courses"
 	download "github.com/Astrak00/AGDownloader/download"
@@ -17,6 +16,7 @@ import (
 )
 
 func main() {
+	// Parse the flags to get the language, userToken, dirPath, maxGoroutines and coursesList
 	language, userToken, dirPath, maxGoroutines, coursesList := parseFlags()
 
 	// Obtain the user information by loggin in with the token
@@ -37,10 +37,10 @@ func main() {
 	// Create a channel to store the files and another for the errors that may occur when listing all the resources to download
 	filesStoreChan := make(chan types.FileStore, len(courses)*20)
 	errChan := make(chan error, len(courses))
-	var wg sync.WaitGroup
-	files.ListAllResourcess(downloadAll, courses, userToken, dirPath, errChan, filesStoreChan, coursesList, &wg)
 
-	wg.Wait()
+	// Creating a chanel to store the files that wull be downloaded
+	files.ListAllResourcess(downloadAll, courses, userToken, dirPath, errChan, filesStoreChan, coursesList)
+
 	close(errChan)
 	close(filesStoreChan)
 
@@ -50,6 +50,7 @@ func main() {
 		}
 	}
 
+	// Download all the files in the channel
 	download.DownloadFiles(filesStoreChan, maxGoroutines, language)
 
 	if language == 1 {
@@ -60,16 +61,25 @@ func main() {
 }
 
 func parseFlags() (int, string, string, int, []string) {
-	language := pflag.Int("l", 0, "Choose your language: 1: Español, 2:English")
+	// Definition of the flags used in this program
+	language_str := pflag.String("l", "ES", "Choose your language: ES: Español, EN:English")
 	token := pflag.String("token", "", "Aula Global user security token 'aulaglobalmovil'")
 	dir := pflag.String("dir", "", "Directory where you want to save the files")
 	cores := pflag.Int("p", 4, "Cores to be used while downloading")
-
 	var courses []string
 	pflag.StringSliceVar(&courses, "courses", []string{}, "Ids or names of the courses to be downloaded, enclosed in \", separated by spaces. \n\"all\" downloads all courses")
+
 	pflag.Parse()
 
-	if *language == 1 {
+	var language int
+	if *language_str == "ES" {
+		language = 1
+	} else {
+		language = 2
+	}
+
+	// Attribution of the program creator
+	if language == 1 {
 		color.Cyan("Programa creado por Astrak00: github.com/Astrak00/AGDownloader/ \n" +
 			"para descargar archivos de Aula Global en la UC3M\n")
 	} else {
@@ -77,17 +87,13 @@ func parseFlags() (int, string, string, int, []string) {
 			"to download files from Aula Global at UC3M\n")
 	}
 
-	if *language == 0 {
-		fmt.Println("Introduce tu idioma: 1: Español, 2:English")
-		fmt.Scanf("%d", language)
-	}
-
+	// If the token or the directory are not given, prompt the user to introduce them
 	if *dir == "" {
-		*dir = promptForDir(*language)
+		*dir = promptForDir(language)
 	}
 
 	if *token == "" {
-		*token = promptForToken(*language)
+		*token = promptForToken(language)
 	}
 
 	// If some courses are given, replace the commas with spaces and split the string
@@ -96,9 +102,12 @@ func parseFlags() (int, string, string, int, []string) {
 		courses = strings.Split(courses[0], " ")
 	}
 
-	return *language, *token, *dir, *cores, courses
+	return language, *token, *dir, *cores, courses
 }
 
+// Prompt the user to introduce the token if it is not given
+// Match the token with the regular expression to check if it is correct
+// Correctness means that the token is at least 20 characters long and only contains letters and numbers
 func promptForToken(language int) string {
 	var token string
 	for {
@@ -121,6 +130,7 @@ func promptForToken(language int) string {
 	}
 }
 
+// Prompt the user to introduce the directory if it is not given
 func promptForDir(language int) string {
 	var dir string
 	for {

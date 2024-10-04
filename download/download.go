@@ -15,6 +15,8 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
+// Download the files in the channel, with a maximum of goroutines and a language
+// Indicates with a progress bar the download of the files
 func DownloadFiles(filesStoreChan <-chan types.FileStore, maxGoroutines int, language int) {
 	if language == 1 {
 		color.Red("Se han encontrado %d archivos para descargar\n", len(filesStoreChan))
@@ -29,10 +31,11 @@ func DownloadFiles(filesStoreChan <-chan types.FileStore, maxGoroutines int, lan
 	// Create an atomic counter for completed files
 	var completedFiles int32
 
+	// Create a progress bar
 	bar := progressbar.NewOptions(totalFiles,
 		progressbar.OptionEnableColorCodes(true),
 		progressbar.OptionShowBytes(false),
-		progressbar.OptionSetWidth(20),
+		progressbar.OptionSetWidth(50),
 		progressbar.OptionSetPredictTime(false),
 		progressbar.OptionSetTheme(progressbar.Theme{
 			Saucer:        "[green]=[reset]",
@@ -56,6 +59,8 @@ func DownloadFiles(filesStoreChan <-chan types.FileStore, maxGoroutines int, lan
 	wg.Wait()
 }
 
+// Download the file with a progress bar, meaning when the file is downloaded, the progress bar will increase
+// As the counter is passed by reference, it will increase the number of completed files.
 func downloadFileWithProgress(fileStore types.FileStore, bar *progressbar.ProgressBar, completedFiles *int32) error {
 	resp, err := http.Get(fileStore.FileURL)
 	if err != nil {

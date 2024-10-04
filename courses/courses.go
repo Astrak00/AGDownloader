@@ -13,9 +13,7 @@ import (
 	types "github.com/Astrak00/AGDownloader/types"
 )
 
-/*
-Gets the courses, both name and ID, of a given userID
-*/
+// Gets the courses, the localized name and ID, given a userID
 func GetCourses(token string, userID string, language int) ([]types.Course, error) {
 	if language == 1 {
 		color.Yellow("Obteniendo cursos...\n")
@@ -42,9 +40,16 @@ func GetCourses(token string, userID string, language int) ([]types.Course, erro
 	ids := courseIDs.FindAllStringSubmatch(string(body), -1)
 
 	courses := make([]types.Course, 0, len(names))
+	name_def := ""
 	for i, name := range names {
+		// Localize the course name
 		nameEs, nameEN := getCoursesNamesLanguages(name[1])
-		courses = append(courses, types.Course{Name: name[1], ID: ids[i][1], NameES: nameEs, NameEN: nameEN})
+		if language == 1 {
+			name_def = nameEs
+		} else {
+			name_def = nameEN
+		}
+		courses = append(courses, types.Course{Name: name_def, ID: ids[i][1]})
 	}
 
 	defer func() {
@@ -58,6 +63,9 @@ func GetCourses(token string, userID string, language int) ([]types.Course, erro
 	return courses, nil
 }
 
+// Get the names of the courses in Spanish and English
+// This function localizes the names of the courses in Spanish and English
+// Separating the names by -1C or -2C
 func getCoursesNamesLanguages(name string) (string, string) {
 	// Find where the names are separated, by -1C or -2C and return the names in Spanish and English
 	idx := 0
@@ -87,6 +95,7 @@ func getCoursesNamesLanguages(name string) (string, string) {
 	return name, name
 }
 
+// SelectCourses prompts the user to select the courses to download
 func SelectCourses(language int, coursesList []string, courses []types.Course) (bool, []string) {
 	downloadAll := false
 	prompt := ""
@@ -98,24 +107,22 @@ func SelectCourses(language int, coursesList []string, courses []types.Course) (
 	if len(coursesList) != 0 && coursesList[0] == "all" {
 		downloadAll = true
 	} else if len(coursesList) == 0 {
-		listCoursesList := getCoursesNameByLanguage(courses, language)
+		listCoursesList := getCoursesNameByLanguage(courses)
 		coursesList = checkboxesCourses(prompt, listCoursesList)
 	}
 	return downloadAll, coursesList
 }
 
-func getCoursesNameByLanguage(courses []types.Course, language int) []string {
-	coursesList := make([]string, 0, len(courses))
-	for _, course := range courses {
-		if language == 1 {
-			coursesList = append(coursesList, course.NameES)
-		} else {
-			coursesList = append(coursesList, course.NameEN)
-		}
+// Map the courses to obtain a []string with the names of the courses
+func getCoursesNameByLanguage(courses []types.Course) []string {
+	coursesList := make([]string, len(courses))
+	for i, course := range courses {
+		coursesList[i] = course.Name
 	}
 	return coursesList
 }
 
+// Show in the terminal a list of checkboxes with the courses to download
 func checkboxesCourses(label string, opts []string) []string {
 	res := []string{}
 	prompt := &survey.MultiSelect{
@@ -127,4 +134,3 @@ func checkboxesCourses(label string, opts []string) []string {
 
 	return res
 }
-

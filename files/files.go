@@ -12,11 +12,8 @@ import (
 	types "github.com/Astrak00/AGDownloader/types"
 )
 
-/*
-Parses the course for available files and sends them to the channel to be downloaded
-*/
+// Parses the course for available files and sends them to the channel to be downloaded
 func processCourse(course types.Course, userToken string, dirPath string, errChan chan<- error, filesStoreChan chan<- types.FileStore) {
-	//fmt.Printf("Course: %s\n", course.Name)
 	files, err := getCourseContent(userToken, course.ID)
 	if err != nil {
 		errChan <- fmt.Errorf("error getting course content: %v", err)
@@ -26,13 +23,11 @@ func processCourse(course types.Course, userToken string, dirPath string, errCha
 	}
 }
 
-/*
-Parses the course and returns the files of type "file"
-*/
+// Parses the course and returns the files of type "file"
+// Fetches the course content from the moodle API
+// Scrapes the file names, urls and types with regex
 func getCourseContent(token, courseID string) ([]types.File, error) {
 	url := fmt.Sprintf("https://%s%s?wstoken=%s&wsfunction=core_course_get_contents&courseid=%s", types.Domain, types.Webservice, token, courseID)
-	//color.Cyan("Getting course content...\n")
-	//color.Cyan("URL: %s\n", url)
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -60,16 +55,16 @@ func getCourseContent(token, courseID string) ([]types.File, error) {
 	urls := fileURLs.FindAllStringSubmatch(string(body), -1)
 	fileType := fileTypes.FindAllStringSubmatch(string(body), -1)
 
-	// Join the names and urls into a File struct
-	files := make([]types.File, 0, len(names))
-
+	// Insert an empy url to the urls at the position i to fix an empty url error in moodle
 	for i := range names {
 		if names[i][1] == "structure" {
-			// Insert an empy url to the urls at the position i to fix an empty url error in moodle
 			urls = append(urls[:i], append([][]string{{""}}, urls[i:]...)...)
 			break
 		}
 	}
+
+	// Join the names and urls into a File struct
+	files := make([]types.File, 0, len(names))
 	for i, name := range names {
 		if fileType[i][1] == "file" {
 			files = append(files, types.File{
@@ -79,14 +74,10 @@ func getCourseContent(token, courseID string) ([]types.File, error) {
 			})
 		}
 	}
-	// color.Red("Files found: %d\n", len(files))
-
 	return files, nil
 }
 
-/*
-Formats the files to be downloaded, adding the course name and sends them to the channel
-*/
+// Formats the files to be downloaded, adding the course name and sends them to the channel
 func catalogFiles(courseName string, token string, files []types.File, dirPath string, filesStoreChan chan<- types.FileStore) {
 	for _, file := range files {
 		url := file.FileURL + "&token=" + token
@@ -100,7 +91,9 @@ func catalogFiles(courseName string, token string, files []types.File, dirPath s
 	}
 }
 
-func ListAllResourcess(downloadAll bool, courses []types.Course, userToken string, dirPath string, errChan chan error, filesStoreChan chan types.FileStore, coursesList []string, wg *sync.WaitGroup) {
+// Creates a list of all the resources to download
+func ListAllResourcess(downloadAll bool, courses []types.Course, userToken string, dirPath string, errChan chan error, filesStoreChan chan types.FileStore, coursesList []string) {
+	var wg sync.WaitGroup
 	if downloadAll {
 		for _, course_item := range courses {
 			wg.Add(1)
@@ -124,4 +117,5 @@ func ListAllResourcess(downloadAll bool, courses []types.Course, userToken strin
 			}
 		}
 	}
+	wg.Wait()
 }

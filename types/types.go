@@ -15,10 +15,8 @@ type File struct {
 }
 
 type Course struct {
-	Name   string
-	NameES string
-	NameEN string
-	ID     string
+	Name string
+	ID   string
 }
 
 type FileStore struct {
@@ -32,4 +30,3 @@ type UserInfo struct {
 	FullName string
 	UserID   string
 }
-
