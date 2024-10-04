@@ -3,6 +3,9 @@ run:
 
 build:
 	go build -o bin/AGDownload main.go
+
 release:
 	goreleaser release --snapshot --clean 
 
+test:
+	go test -v ./...
