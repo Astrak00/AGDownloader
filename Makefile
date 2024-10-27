@@ -9,3 +9,6 @@ release:
 
 test:
 	go test -v ./...
+
+clean:
+	rm -rf dist 
