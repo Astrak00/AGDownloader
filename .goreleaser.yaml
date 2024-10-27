@@ -10,7 +10,6 @@ version: 2
 
 before:
   hooks:
-    # You may remove this if you don't use go modules.
     - go mod tidy
 
 builds:
@@ -45,3 +44,10 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
+
+brews:
+- name: AgDownloader
+  homepage: https://github.com/Astrak00/AGDownloader 
+  tap:
+    owner: Astrak00
+    name: AGDownloader
