@@ -47,7 +47,7 @@ changelog:
 
 brews:
 - name: AgDownloader
-  homepage: https://github.com/Astrak00/AGDownloader 
+  homepage: "https://github.com/Astrak00/homebrew-tools"
   tap:
     owner: Astrak00
-    name: AGDownloader
+    name: homebrew-tools
