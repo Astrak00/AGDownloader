@@ -28,17 +28,3 @@ archives:
     format_overrides:
       - goos: windows
         format: zip
-
-changelog:
-  sort: asc
-  filters:
-    exclude:
-      - "^docs:"
-      - "^test:"
-
-brews:
-  - name: AgDownloader
-    homepage: "https://github.com/Astrak00/homebrew-tools"
-    tap:
-      owner: Astrak00
-      name: homebrew-tools

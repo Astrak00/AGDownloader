@@ -98,15 +98,13 @@ func getCoursesNamesLanguages(name string) (string, string) {
 // SelectCourses prompts the user to select the courses to download
 func SelectCourses(language int, coursesList []string, courses []types.Course) (bool, []string) {
 	downloadAll := false
-	prompt := ""
-	if language == 1 {
-		prompt = "Selecciona los cursos que quieres descargar\n"
-	} else {
-		prompt = "Select the courses you want to download\n"
-	}
 	if len(coursesList) != 0 && coursesList[0] == "all" {
 		downloadAll = true
 	} else if len(coursesList) == 0 {
+		prompt := "Select the courses you want to download\n"
+		if language == 1 {
+			prompt = "Selecciona los cursos que quieres descargar\n"
+		}
 		listCoursesList := getCoursesNameByLanguage(courses)
 		coursesList = checkboxesCourses(prompt, listCoursesList)
 	}

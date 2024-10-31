@@ -17,6 +17,7 @@ import (
 
 func main() {
 	// Parse the flags to get the language, userToken, dirPath, maxGoroutines and coursesList
+
 	language, userToken, dirPath, maxGoroutines, coursesList := parseFlags()
 
 	// Obtain the user information by loggin in with the token
@@ -51,6 +52,9 @@ func main() {
 	}
 
 	// Download all the files in the channel
+	if maxGoroutines == -1 {
+		maxGoroutines = len(filesStoreChan)
+	}
 	download.DownloadFiles(filesStoreChan, maxGoroutines, language)
 
 	if language == 1 {
@@ -65,7 +69,7 @@ func parseFlags() (int, string, string, int, []string) {
 	language_str := pflag.String("l", "ES", "Choose your language: ES: Español, EN:English")
 	token := pflag.String("token", "", "Aula Global user security token 'aulaglobalmovil'")
 	dir := pflag.String("dir", "", "Directory where you want to save the files")
-	cores := pflag.Int("p", 4, "Cores to be used while downloading")
+	cores := pflag.Int("p", -1, "Cores to be used while downloading")
 	var courses []string
 	pflag.StringSliceVar(&courses, "courses", []string{}, "Ids or names of the courses to be downloaded, enclosed in \", separated by spaces. \n\"all\" downloads all courses")
 
