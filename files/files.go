@@ -91,18 +91,18 @@ func catalogFiles(courseName string, token string, files []types.File, dirPath s
 	}
 }
 
-// Creates a list of all the resources to download
+// ListAllResourcess Creates a list of all the resources to download
 func ListAllResourcess(downloadAll bool, courses []types.Course, userToken string, dirPath string, errChan chan error, filesStoreChan chan types.FileStore, coursesList []string) {
 	var wg sync.WaitGroup
 	if downloadAll {
-		for _, course_item := range courses {
+		for _, courseItem := range courses {
 			wg.Add(1)
-			go func(course_item types.Course) {
+			go func(courseItem types.Course) {
 				defer wg.Done()
 				// Passing chan <- types.FileStore(filesStoreChan) as a parameter to the function makes the chanel
 				// to be a parameter of the function, so it can be used inside the function and a send-only channel
-				processCourse(course_item, userToken, dirPath, chan<- error(errChan), chan<- types.FileStore(filesStoreChan))
-			}(course_item)
+				processCourse(courseItem, userToken, dirPath, chan<- error(errChan), chan<- types.FileStore(filesStoreChan))
+			}(courseItem)
 		}
 	} else {
 		for _, course := range courses {

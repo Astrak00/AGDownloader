@@ -2,15 +2,17 @@ package prog_args
 
 import (
 	"fmt"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/fatih/color"
 	"github.com/spf13/pflag"
+	"log"
 	"regexp"
-	"strings"
+	"strconv"
 )
 
 func ParseFlags() (int, string, string, int, []string) {
 	// Definition of the flags used in this program
-	languageStr := pflag.String("l", "ES", "Choose your language: ES: Español, EN:English")
+	languageStr := pflag.String("l", "EN", "Choose your language: ES: Español, EN:English")
 	token := pflag.String("token", "", "Aula Global user security token 'aulaglobalmovil'")
 	dir := pflag.String("dir", "", "Directory where you want to save the files")
 	cores := pflag.Int("p", -1, "Cores to be used while downloading")
@@ -20,37 +22,38 @@ func ParseFlags() (int, string, string, int, []string) {
 	pflag.Parse()
 
 	var language int
-	if *languageStr == "ES" {
+	switch *languageStr {
+	case "ES":
 		language = 1
-	} else {
+	default:
 		language = 2
 	}
 
 	// Attribution of the program creator
 	if language == 1 {
-		color.Cyan("Programa creado por Astrak00: github.com/Astrak00/AGDownloader/ \n" +
+		color.Cyan("Programa creado por Astrak00: github.com/Astrak00/AGDownloader/" +
 			"para descargar archivos de Aula Global en la UC3M\n")
 	} else {
-		color.Cyan("Program created by Astrak00: github.com/Astrak00/AGDownloader/ \n" +
+		color.Cyan("Program created by Astrak00: github.com/Astrak00/AGDownloader/" +
 			"to download files from Aula Global at UC3M\n")
 	}
 
-	// If the token or the directory are not given, prompt the user to introduce them
-	if *dir == "" {
-		*dir = promptForDir(language)
+	p := tea.NewProgram(initialModel(dir, token, *cores))
+
+	finalModel, err := p.Run()
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	if *token == "" {
-		*token = PromptForToken(language)
+	fmt.Println("Final token:", finalModel.(model).inputs[tokenIota].Value())
+	language = 1
+	tokenObtained := finalModel.(model).inputs[tokenIota].Value()
+	dirObtained := finalModel.(model).inputs[dirIota].Value()
+	coresObtained, err := strconv.Atoi(finalModel.(model).inputs[corIota].Value())
+	if err != nil {
+		log.Fatal(err)
 	}
-
-	// If some courses are given, replace the commas with spaces and split the string
-	if len(courses) == 1 && courses[0] != "" {
-		courses[0] = strings.ReplaceAll(strings.ToLower(courses[0]), ",", " ")
-		courses = strings.Split(courses[0], " ")
-	}
-
-	return language, *token, *dir, *cores, courses
+	return language, tokenObtained, dirObtained, coresObtained, courses
 }
 
 // PromptForToken Prompt the user to introduce the token if it is not given
@@ -60,9 +63,9 @@ func PromptForToken(language int) string {
 	var token string
 	for {
 		if language == 1 {
-			fmt.Println("Introduzca el token de seguridad de su usuario de Aula Global 'aulaglobalmovil':")
+			fmt.Println("Ha habido un error con el token, por favor, introdúcelo de nuevo:")
 		} else {
-			fmt.Println("Introduce your Aula Global user security token 'aulaglobalmovil':")
+			fmt.Println("There has been an error with the token, please input it again:")
 		}
 		fmt.Scanf("%s", &token)
 
@@ -74,29 +77,6 @@ func PromptForToken(language int) string {
 			color.Red("El token introducido no parece estar correcto. Inténtelo de nuevo.")
 		} else {
 			color.Red("The given token does not seem to be right. Please try again.")
-		}
-	}
-}
-
-// Prompt the user to introduce the directory if it is not given
-func promptForDir(language int) string {
-	var dir string
-	for {
-		if language == 1 {
-			fmt.Println("Introduzca la ruta donde quiere guardar los archivos:")
-		} else {
-			fmt.Println("Enter the path where you want to save the files:")
-		}
-		fmt.Scanf("%s", &dir)
-
-		if dir != "" {
-			return dir
-		}
-
-		if language == 1 {
-			color.Red("La ruta introducida no parece estar correcta. Inténtelo de nuevo.")
-		} else {
-			color.Red("The given path does not seem to be right. Please try again.")
 		}
 	}
 }

@@ -128,7 +128,10 @@ func checkboxesCourses(label string, opts []string) []string {
 		Options:  opts,
 		PageSize: 6,
 	}
-	survey.AskOne(prompt, &res, survey.WithKeepFilter(true))
+	err := survey.AskOne(prompt, &res, survey.WithKeepFilter(true))
+	if err != nil {
+		return nil
+	}
 
 	return res
 }
