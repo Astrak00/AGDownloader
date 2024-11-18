@@ -7,7 +7,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"regexp"
 	"strconv"
-	"strings"
 )
 
 type (
@@ -37,30 +36,6 @@ type model struct {
 }
 
 // Validator functions to ensure valid input
-func ccnValidator(s string) error {
-	// Credit Card Number should a string less than 20 digits
-	// It should include 16 integers and 3 spaces
-	if len(s) > 16+3 {
-		return fmt.Errorf("CCN is too long")
-	}
-
-	if len(s) == 0 || len(s)%5 != 0 && (s[len(s)-1] < '0' || s[len(s)-1] > '9') {
-		return fmt.Errorf("CCN is invalid")
-	}
-
-	// The last digit should be a number unless it is a multiple of 4 in which
-	// case it should be a space
-	if len(s)%5 == 0 && s[len(s)-1] != ' ' {
-		return fmt.Errorf("CCN must separate groups with spaces")
-	}
-
-	// The remaining digits should be integers
-	c := strings.ReplaceAll(s, " ", "")
-	_, err := strconv.ParseInt(c, 10, 64)
-
-	return err
-}
-
 func corValidator(s string) error {
 	// Number of cores should be an integer
 	_, err := strconv.ParseInt(s, 10, 64)
@@ -158,6 +133,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.prevInput()
 		case tea.KeyTab, tea.KeyCtrlN:
 			m.nextInput()
+		default:
+			panic("unhandled default case")
 		}
 		for i := range m.inputs {
 			m.inputs[i].Blur()

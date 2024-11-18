@@ -137,7 +137,7 @@ func DownloadFiles(filesStoreChan <-chan types.FileStore, maxGoroutines int) {
 		p.Send(tea.Quit())
 	}()
 
-	if err := p.Start(); err != nil {
+	if _, err := p.Run(); err != nil {
 		fmt.Printf("Error: %v\n", err)
 	}
 }
@@ -147,7 +147,12 @@ func downloadFile(fileStore types.FileStore) error {
 	if err != nil {
 		return fmt.Errorf("error downloading the file: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			fmt.Println("Error closing body")
+		}
+	}(resp.Body)
 
 	dir := filepath.Dir(fileStore.Dir)
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
@@ -158,7 +163,12 @@ func downloadFile(fileStore types.FileStore) error {
 	if err != nil {
 		return fmt.Errorf("error creating the file: %v", err)
 	}
-	defer out.Close()
+	defer func(out *os.File) {
+		err := out.Close()
+		if err != nil {
+			fmt.Println("Error closing file")
+		}
+	}(out)
 
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {

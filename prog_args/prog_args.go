@@ -67,7 +67,10 @@ func PromptForToken(language int) string {
 		} else {
 			fmt.Println("There has been an error with the token, please input it again:")
 		}
-		fmt.Scanf("%s", &token)
+		_, err := fmt.Scanf("%s", &token)
+		if err != nil {
+			return ""
+		}
 
 		if token != "" && regexp.MustCompile(`[a-zA-Z0-9]{20,}`).MatchString(token) && len(token) > 20 {
 			return token
