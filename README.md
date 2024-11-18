@@ -1,12 +1,16 @@
 # AGDownloader
 
+> [!IMPORTANT]
+> This program is under re-write
+> As the ability to obtain this token has been removed by the organization, a new version of the utility is coming made in Rust. Why the decision of rust? Why not, it is a learning project.
+
 AGDownloader is a simple and easy-to-use downloader for AulaGlobal (the use of moodle by the University Carlos III of Madrid). It is a command-line tool that allows you to download all the files from all the courses a user has access to.
 
 You can also indicate the courseID or names of the courses you want to download, and the program will only download the files from those courses.
 
 ## Usage
 To download the programm, go to the [releases page](https://github.com/Astrak00/AGDownloader/releases/latest) and download the latest version for your operating system. You can also [build](#build-from-source) the program from source by following the instructions below. 
-> [!NOTE] Key
+> [!NOTE]
 > Darwin = MacOS
 > ARM = M1/M2/M3 and Snapdragon
 
