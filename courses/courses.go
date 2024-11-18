@@ -13,7 +13,7 @@ import (
 	types "github.com/Astrak00/AGDownloader/types"
 )
 
-// Gets the courses, the localized name and ID, given a userID
+// GetCourses Gets the courses, the localized name and ID, given a userID
 func GetCourses(token string, userID string, language int) ([]types.Course, error) {
 	if language == 1 {
 		color.Yellow("Obteniendo cursos...\n")

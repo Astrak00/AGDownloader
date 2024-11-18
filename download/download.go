@@ -10,58 +10,139 @@ import (
 	"sync/atomic"
 
 	types "github.com/Astrak00/AGDownloader/types"
-	"github.com/fatih/color"
 
-	"github.com/schollz/progressbar/v3"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
-// Download the files in the channel, with a maximum of goroutines and a language
-// Indicates with a progress bar the download of the files
-func DownloadFiles(filesStoreChan <-chan types.FileStore, maxGoroutines int, language int) {
-	if language == 1 {
-		color.Red("Se han encontrado %d archivos para descargar\n", len(filesStoreChan))
-	} else {
-		color.Red("Found %d items to download\n", len(filesStoreChan))
-	}
-
-	var wg sync.WaitGroup
-	semaphore := make(chan struct{}, maxGoroutines)
-	totalFiles := len(filesStoreChan)
-
-	// Create an atomic counter for completed files
-	var completedFiles int32
-
-	// Create a progress bar
-	bar := progressbar.NewOptions(totalFiles,
-		progressbar.OptionEnableColorCodes(true),
-		progressbar.OptionShowBytes(false),
-		progressbar.OptionSetWidth(50),
-		progressbar.OptionSetPredictTime(false),
-		progressbar.OptionSetTheme(progressbar.Theme{
-			Saucer:        "[green]=[reset]",
-			SaucerHead:    "[green]>[reset]",
-			SaucerPadding: " ",
-			BarStart:      "[",
-			BarEnd:        "]",
-		}))
-
-	for fileStore := range filesStoreChan {
-		wg.Add(1)
-		go func(fileStore types.FileStore) {
-			defer wg.Done()
-			semaphore <- struct{}{}
-			defer func() { <-semaphore }()
-			if err := downloadFileWithProgress(fileStore, bar, &completedFiles); err != nil {
-				fmt.Printf("Error downloading file %s: %v\n", fileStore.FileName, err)
-			}
-		}(fileStore)
-	}
-	wg.Wait()
+type model struct {
+	totalFiles     int32
+	completedFiles int32
+	currentFile    string
+	errs           []string
 }
 
-// Download the file with a progress bar, meaning when the file is downloaded, the progress bar will increase
-// As the counter is passed by reference, it will increase the number of completed files.
-func downloadFileWithProgress(fileStore types.FileStore, bar *progressbar.ProgressBar, completedFiles *int32) error {
+func (m model) Init() tea.Cmd {
+	// No initialization
+	return nil
+}
+
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case progressMsg:
+		atomic.AddInt32(&m.completedFiles, 1)
+		m.currentFile = msg.fileName
+		return m, nil
+
+	case errorMsg:
+		m.errs = append(m.errs, fmt.Sprintf("Error downloading %s: %v", msg.fileName, msg.err))
+		return m, nil
+
+	case tea.KeyMsg:
+		if msg.String() == "q" {
+			return m, tea.Quit
+		}
+	}
+
+	return m, nil
+}
+
+func (m model) View() string {
+	// Gradient styling
+
+	progress := float64(m.completedFiles) / float64(m.totalFiles) * 100
+	barWidth := 30
+	filled := int(progress / 100 * float64(barWidth))
+	empty := barWidth - filled
+
+	filledBar := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#7D56F4")).
+		Render(string(repeat('█', filled)))
+
+	emptyBar := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#353C49")).
+		Render(string(repeat(' ', empty)))
+
+	bar := fmt.Sprintf("%s%s %.1f%%", filledBar, emptyBar, progress)
+
+	view := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#FFFFFF")).
+		Render(fmt.Sprintf("Downloading files...\n%s\nCompleted: %d/%d\n", bar, m.completedFiles, m.totalFiles))
+
+	if m.currentFile != "" {
+		view += lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#FF8C00")).
+			Render(fmt.Sprintf("\nCurrent file: %s\n", m.currentFile))
+	}
+	if len(m.errs) > 0 {
+		view += lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#FF3333")).
+			Render("\nErrors:\n")
+		for _, e := range m.errs {
+			view += fmt.Sprintf("- %s\n", e)
+		}
+	}
+	view += "\nPress 'q' to quit.\n"
+	return view
+}
+
+type progressMsg struct {
+	fileName string
+}
+
+type errorMsg struct {
+	fileName string
+	err      error
+}
+
+func repeat(char rune, count int) []rune {
+	out := make([]rune, count)
+	for i := range out {
+		out[i] = char
+	}
+	return out
+}
+
+// DownloadFiles orchestrates the file downloads and displays progress using Bubble Tea.
+func DownloadFiles(filesStoreChan <-chan types.FileStore, maxGoroutines int) {
+	totalFiles := len(filesStoreChan)
+	m := model{
+		totalFiles: int32(totalFiles),
+	}
+
+	// Create the Bubble Tea program
+	p := tea.NewProgram(m)
+
+	// Start the program in a goroutine
+	go func() {
+		var wg sync.WaitGroup
+		semaphore := make(chan struct{}, maxGoroutines)
+
+		for fileStore := range filesStoreChan {
+			wg.Add(1)
+			go func(fileStore types.FileStore) {
+				defer wg.Done()
+				semaphore <- struct{}{}
+				defer func() { <-semaphore }()
+				if err := downloadFile(fileStore); err != nil {
+					p.Send(errorMsg{fileName: fileStore.FileName, err: err})
+				} else {
+					p.Send(progressMsg{fileName: fileStore.FileName})
+				}
+			}(fileStore)
+		}
+		wg.Wait()
+
+		// Quit the program after all downloads are complete
+		p.Send(tea.Quit())
+	}()
+
+	if err := p.Start(); err != nil {
+		fmt.Printf("Error: %v\n", err)
+	}
+}
+
+func downloadFile(fileStore types.FileStore) error {
 	resp, err := http.Get(fileStore.FileURL)
 	if err != nil {
 		return fmt.Errorf("error downloading the file: %v", err)
@@ -84,7 +165,5 @@ func downloadFileWithProgress(fileStore types.FileStore, bar *progressbar.Progre
 		return fmt.Errorf("error copying the file: %v", err)
 	}
 
-	atomic.AddInt32(completedFiles, 1)
-	bar.Add(1)
 	return nil
 }
