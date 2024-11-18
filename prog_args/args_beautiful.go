@@ -5,6 +5,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/fatih/color"
 	"regexp"
 	"strconv"
 )
@@ -63,6 +64,7 @@ func dirValidator(s string) error {
 }
 
 func initialModel(dirStr *string, tokenStr *string, cores int) model {
+
 	var inputs []textinput.Model = make([]textinput.Model, 3)
 	focusSet := false
 	inputs[tokenIota] = textinput.New()
@@ -133,8 +135,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.prevInput()
 		case tea.KeyTab, tea.KeyCtrlN:
 			m.nextInput()
+		case tea.KeyCtrlD:
+			// Exit the program if the user presses Ctrl+D
+			color.Red("Press CTRL+C to exit")
+			return m, tea.Quit
 		default:
-			panic("unhandled default case")
+
 		}
 		for i := range m.inputs {
 			m.inputs[i].Blur()
@@ -154,8 +160,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	return fmt.Sprintf(
-		` Input the directory, token and number of cores to use
+	return fmt.Sprintf(`Input the directory, token and number of cores to use:
 
  %s
  %s
@@ -171,7 +176,7 @@ func (m model) View() string {
 		inputStyle.Width(5).Render("Cores"),
 		m.inputs[dirIota].View(),
 		m.inputs[corIota].View(),
-		continueStyle.Render("Continue ->"),
+		continueStyle.Render("Continue (enter)->"),
 	) + "\n"
 }
 
