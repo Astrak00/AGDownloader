@@ -14,3 +14,4 @@ clap = {version = "4.5.21", features = ["derive"]}
 html = "0.6.3"
 scraper = "0.21.0"
 percent-encoding = "2.3.1"
+futures = "0.3.31"

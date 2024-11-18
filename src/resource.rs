@@ -97,16 +97,15 @@ pub async fn download_file_with_original_name(
 
     let result: String = match content_disposition {
         Some(header_value) => match header_value.to_str() {
-            Ok(result_str) => result_str.to_owned(),  // Convert &str to owned String
+            Ok(result_str) => result_str.to_owned(), // Convert &str to owned String
             Err(_) => {
                 // Handle non-UTF8 characters and return owned String
                 let bytes = header_value.as_bytes();
                 String::from_utf8_lossy(bytes).into_owned()
             }
         },
-        None => String::from("Content-Disposition header not found")
+        None => String::from("Content-Disposition header not found"),
     };
-    
 
     let filename =
         percent_encoding::percent_decode_str(&parse_filename_from_content_disposition(result))
