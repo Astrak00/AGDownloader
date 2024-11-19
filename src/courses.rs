@@ -8,7 +8,7 @@ pub(crate) struct Course {
 
 const MOODLE_URL: &str = "https://aulaglobal.uc3m.es/";
 
-pub async fn get_courses(auth_cookie: &str) -> Result<Vec<Course>, Box<dyn std::error::Error>> {
+pub async fn get_courses(auth_cookie: String) -> Result<Vec<Course>, Box<dyn std::error::Error>> {
     let client = reqwest::Client::new();
     let res = client
         .get(MOODLE_URL)

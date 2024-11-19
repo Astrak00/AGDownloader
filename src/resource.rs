@@ -7,24 +7,16 @@ use std::path::Path;
 pub(crate) struct Resource {
     pub(crate) id: String,
     pub(crate) course_name: String,
-    pub(crate) filename: String,
 }
 
 const MOODLE_COURSE_URL: &str = "https://aulaglobal.uc3m.es/course/view.php?id=";
 const MOODLE_CONTENT_URL: &str = "https://aulaglobal.uc3m.es/mod/resource/view.php?id=";
-const LANG_EN: &str = "&lang=en";
-//const LANG_ES: &str = "&lang=es";
 
 pub async fn get_course_contents(
     auth_cookie: &str,
     course: &mut Course,
-) -> Result<(Vec<Resource>, String), Box<dyn std::error::Error>> {
+) -> Result<(Vec<Resource>, String), Box<dyn std::error::Error + Send + Sync>> {
     let client = reqwest::Client::new();
-    println!("Getting course contents for: {}", course.id);
-    println!(
-        "URL: {}",
-        format!("{}{}{}", MOODLE_COURSE_URL, course.id, LANG_EN)
-    );
     let res = client
         .get(format!("{}{}", MOODLE_COURSE_URL, course.id))
         .header("Cookie", format!("MoodleSessionag={}", auth_cookie))
@@ -51,21 +43,11 @@ pub async fn get_course_contents(
     let mut contents: Vec<Resource> = Vec::new();
     for element in document.select(&selector) {
         if let Some(link) = element.value().attr("href") {
-            if link.starts_with("https://aulaglobal.uc3m.es/mod/resource/view.php") {
-                let name_selector = Selector::parse("span.instancename").unwrap();
-                if let Some(span) = element.select(&name_selector).next() {
-                    let name: String = span
-                        .text()
-                        .map(|c| c.trim())
-                        .filter(|c| !c.is_empty())
-                        .collect::<Vec<_>>()
-                        .join(" ");
-                    contents.push(Resource {
-                        id: link.split("=").last().unwrap().to_string(),
-                        course_name: course_name.clone(),
-                        filename: name,
-                    });
-                }
+            if link.starts_with("https://aulaglobal.uc3m.es/mod/resource/") {
+                contents.push(Resource {
+                    id: link.split("=").last().unwrap().to_string(),
+                    course_name: course_name.clone(),
+                });
             }
         }
     }
@@ -77,7 +59,7 @@ pub async fn download_file_with_original_name(
     resource: &Resource,
     output_dir: &str,
     cookie: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let id = &resource.id;
     let output_dir = format!("{}/{}", output_dir, resource.course_name.replace("/", "-"));
     let client = reqwest::Client::new();
