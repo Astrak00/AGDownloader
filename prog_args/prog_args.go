@@ -2,14 +2,16 @@ package prog_args
 
 import (
 	"fmt"
+	"log"
+	"strconv"
+
+	types "github.com/Astrak00/AGDownloader/types"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/fatih/color"
 	"github.com/spf13/pflag"
-	"log"
-	"strconv"
 )
 
-func ParseFlags() (int, string, string, int, []string) {
+func ParseFlags() types.Prog_args {
 	// Definition of the flags used in this program
 	languageStr := pflag.String("l", "EN", "Choose your language: ES: Español, EN:English")
 	token := pflag.String("token", "", "Aula Global user security token 'aulaglobalmovil'")
@@ -28,28 +30,46 @@ func ParseFlags() (int, string, string, int, []string) {
 		language = 2
 	}
 
+	return types.Prog_args{
+		Language:      language,
+		UserToken:     *token,
+		DirPath:       *dir,
+		MaxGoroutines: *cores,
+		CoursesList:   courses,
+	}
+}
+
+// Knowledge_token Ask the user if they know their token
+func AskForToken(arguments types.Prog_args) types.Prog_args {
+
 	// Attribution of the program creator
-	if language == 1 {
+	if arguments.Language == 1 {
 		color.Cyan("Programa creado por Astrak00 para descargar archivos de Aula Global en la UC3M\n")
 	} else {
 		color.Cyan("Program created by Astrak00 to download files from Aula Global at UC3M\n")
 	}
 
-	p := tea.NewProgram(initialModel(dir, token, *cores))
+	p := tea.NewProgram(initialModel(&arguments.DirPath, &arguments.UserToken, arguments.MaxGoroutines))
 
 	finalModel, err := p.Run()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	language = 1
 	tokenObtained := finalModel.(model).inputs[tokenIota].Value()
 	dirObtained := finalModel.(model).inputs[dirIota].Value()
 	coresObtained, err := strconv.Atoi(finalModel.(model).inputs[corIota].Value())
 	if err != nil {
 		log.Fatal(err)
 	}
-	return language, tokenObtained, dirObtained, coresObtained, courses
+
+	return types.Prog_args{
+		Language:      arguments.Language,
+		UserToken:     tokenObtained,
+		DirPath:       dirObtained,
+		MaxGoroutines: coresObtained,
+		CoursesList:   arguments.CoursesList,
+	}
 }
 
 // PromptForToken Prompt the user to introduce the token if it is not given
