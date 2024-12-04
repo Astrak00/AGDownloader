@@ -113,19 +113,12 @@ func initialModel(dirStr *string, cores int) model {
 	inputs[dirIota].Prompt = ""
 	if *dirStr != "" {
 		inputs[dirIota].SetValue(*dirStr)
-	} else if !focusSet {
-		inputs[dirIota].Focus()
-		focusSet = true
 	}
 	inputs[dirIota].Validate = dirValidator
 
 	inputs[corIota] = textinput.New()
 	if cores == -1 {
-		cores = 1
-	}
-	if !focusSet {
-		inputs[corIota].Focus()
-		focusSet = true
+		cores = 4
 	}
 	inputs[corIota].SetValue(strconv.Itoa(cores))
 	inputs[corIota].Placeholder = "Number of cores to use"
@@ -187,7 +180,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	return fmt.Sprintf(`Input the directory, cookie, and number of cores to use:
+	return fmt.Sprintf(`
+Input the directory, cookie, and number of cores to use:
 
  %s
  %s

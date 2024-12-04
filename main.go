@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 
-	cookie "github.com/Astrak00/AGDownloader/cookies"
 	c "github.com/Astrak00/AGDownloader/courses"
 	download "github.com/Astrak00/AGDownloader/download"
 	files "github.com/Astrak00/AGDownloader/files"
@@ -18,29 +17,13 @@ func main() {
 	// Parse the flags to get the language, userToken, dirPath, maxGoroutines and coursesList
 
 	arguments := prog_args.ParseFlags()
-	if arguments.UserToken == "" {
-		if prog_args.Knowledge_element("token") {
-			arguments = prog_args.AskForToken(arguments)
-		} else {
-			// Ask to the cookie
-			// Create a marker to be able to get here again
-			if prog_args.Knowledge_element("auth cookie") {
-				arguments.UserToken = cookie.GetTokenFromCookie(arguments)
-			} else {
-				fmt.Println("You must provide a cookie or a token to download the courses")
-				fmt.Println(cookie.CookieText)
-				fmt.Println(cookie.ObtainCookieText)
-				arguments.UserToken = cookie.GetTokenFromCookie(arguments)
 
-			}
-
-		}
-	}
+	arguments = prog_args.ObtainingToken(arguments)
 
 	// Obtain the user information by loggin in with the token
 	user, err := u.GetUserInfo(arguments.UserToken)
 	for err != nil {
-		user, err = u.GetUserInfo(prog_args.PromptForToken(arguments.Language))
+		user, err = u.GetUserInfo(arguments.UserToken)
 	}
 
 	// Obtain the courses of the user

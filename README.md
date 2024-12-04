@@ -83,13 +83,13 @@ You can specify the number of cores you want to use while downloading the files 
 
 
 
-
 ## Build from source
 
 To build the program from source, you will need to have Go installed on your computer. You can download it from the [official website](https://golang.org/). Once you have installed Go, you can clone the repository and build the program by running the following commands:
 
 ```bash
 git clone git@github.com:Astrak00/AGDownloader.git
+cd AGDownloader/
 go build
 ```
 This will create an executable file called AGDownloader that you can run.

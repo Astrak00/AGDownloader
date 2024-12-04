@@ -2,12 +2,13 @@ package prog_args
 
 import (
 	"fmt"
+	"regexp"
+	"strconv"
+
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/fatih/color"
-	"regexp"
-	"strconv"
 )
 
 type (
@@ -64,38 +65,45 @@ func dirValidator(s string) error {
 }
 
 func initialModel(dirStr *string, tokenStr *string, cores int) model {
-
 	var inputs []textinput.Model = make([]textinput.Model, 3)
 	focusSet := false
+
+	// Token input setup
 	inputs[tokenIota] = textinput.New()
 	inputs[tokenIota].Placeholder = "Token from AulaGlobal website"
 	inputs[tokenIota].CharLimit = 32
 	inputs[tokenIota].Width = 32
-	inputs[tokenIota].Prompt = ""
 	if *tokenStr != "" {
+		fmt.Println(01)
 		inputs[tokenIota].SetValue(*tokenStr)
-	} else {
+	} else if !focusSet {
+		fmt.Println(02)
+		inputs[tokenIota].Prompt = ""
 		inputs[tokenIota].Focus()
 		focusSet = true
 	}
 	inputs[tokenIota].Validate = tokenValidator
 
+	// Directory input setup
 	inputs[dirIota] = textinput.New()
 	inputs[dirIota].Placeholder = "downloaded_files"
 	inputs[dirIota].CharLimit = 40
 	inputs[dirIota].Width = 30
 	inputs[dirIota].Prompt = ""
 	if *dirStr != "" {
+		fmt.Println(03)
 		inputs[dirIota].SetValue(*dirStr)
 	} else if !focusSet {
+		fmt.Println(04)
 		inputs[dirIota].Focus()
 		focusSet = true
 	}
 	inputs[dirIota].Validate = dirValidator
 
+	// Cores input setup
 	inputs[corIota] = textinput.New()
 	if cores == -1 {
-		cores = 1
+		cores = 4
 	}
 	if !focusSet {
 		inputs[corIota].Focus()
@@ -113,6 +121,7 @@ func initialModel(dirStr *string, tokenStr *string, cores int) model {
 		err:     nil,
 	}
 }
+
 
 func (m model) Init() tea.Cmd {
 	return textinput.Blink

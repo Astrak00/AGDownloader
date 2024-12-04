@@ -1,7 +1,6 @@
 package prog_args
 
 import (
-	"fmt"
 	"log"
 	"strconv"
 
@@ -69,33 +68,5 @@ func AskForToken(arguments types.Prog_args) types.Prog_args {
 		DirPath:       dirObtained,
 		MaxGoroutines: coresObtained,
 		CoursesList:   arguments.CoursesList,
-	}
-}
-
-// PromptForToken Prompt the user to introduce the token if it is not given
-// Match the token with the regular expression to check if it is correct
-// Correctness means that the token is at least 20 characters long and only contains letters and numbers
-func PromptForToken(language int) string {
-	var token string
-	for {
-		if language == 1 {
-			color.Yellow("Ha habido un error con el token, por favor, introdúcelo de nuevo:")
-		} else {
-			color.Yellow("There has been an error with the token, please input it again:")
-		}
-		_, err := fmt.Scanf("%s", &token)
-		if err != nil {
-			return ""
-		}
-
-		if tokenValidator(token) == nil {
-			return token
-		}
-
-		if language == 1 {
-			color.Red("El token introducido no parece estar correcto. Inténtelo de nuevo.")
-		} else {
-			color.Red("The given token does not seem to be right. Please try again.")
-		}
 	}
 }

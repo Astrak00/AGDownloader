@@ -4,6 +4,7 @@ const (
 	Domain     = "aulaglobal.uc3m.es"
 	Webservice = "/webservice/rest/server.php"
 	Service    = "aulaglobal_mobile"
+	TokenDir   = "token-file"
 )
 
 type Prog_args struct {

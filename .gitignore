@@ -5,3 +5,4 @@ AGDownloader
 dist
 .DS_Store
 .idea
+token-file
