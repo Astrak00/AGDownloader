@@ -30,9 +30,6 @@ func main() {
 				fmt.Println("You must provide a cookie or a token to download the courses")
 				fmt.Println(cookie.CookieText)
 				fmt.Println(cookie.ObtainCookieText)
-				fmt.Println("When you have it, press enter")
-				fmt.Scanln()
-				fmt.Println("")
 				arguments.UserToken = cookie.GetTokenFromCookie(arguments)
 
 			}

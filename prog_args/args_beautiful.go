@@ -160,7 +160,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	return fmt.Sprintf(`Input the directory, token and number of cores to use:
+	return fmt.Sprintf(`Input the directory, token, and number of cores to use:
 
  %s
  %s

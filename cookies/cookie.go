@@ -28,11 +28,11 @@ const (
 	darkGray         = lipgloss.Color("#767676")
 	CookieText       = "To do this, the easiest way is to log in to Aula Global, open the developer tools, go to the console tab and run the following command:"
 	ObtainCookieText = `function getCookie() {
-		const value = '; ' + document.cookie;
-		const parts = value.split('; MoodleSessionag=');
-		if (parts.length === 2) console.log(parts.pop().split(';').shift());
-	  } 
-	  getCookie();`
+    const value = '; ' + document.cookie;
+    const parts = value.split('; MoodleSessionag=');
+    if (parts.length === 2) console.log(parts.pop().split(';').shift());
+}
+getCookie();`
 )
 
 var (
@@ -58,6 +58,8 @@ func GetTokenFromCookie(arguments types.Prog_args) string {
 	// Convert from cookie to token
 
 	token := cookie_to_token(cookie)
+
+	fmt.Println("Your token is", token)
 
 	return token
 
@@ -94,15 +96,18 @@ func initialModel(dirStr *string, cores int) model {
 	var inputs []textinput.Model = make([]textinput.Model, 3)
 	focusSet := false
 	inputs[authCookieIndex] = textinput.New()
-	inputs[authCookieIndex].Placeholder = "Authentication cookie from AulaGlobal website"
+	inputs[authCookieIndex].Placeholder = "AulaGlobal auth cookie"
 	inputs[authCookieIndex].CharLimit = 32
 	inputs[authCookieIndex].Width = 32
 	inputs[authCookieIndex].Prompt = ""
 	inputs[authCookieIndex].Validate = tokenValidator
-	inputs[authCookieIndex].Focus()
+	if !focusSet {
+		inputs[authCookieIndex].Focus()
+		focusSet = true
+	}
 
 	inputs[dirIota] = textinput.New()
-	inputs[dirIota].Placeholder = "downloaded_files"
+	inputs[dirIota].Placeholder = "(current directory)"
 	inputs[dirIota].CharLimit = 40
 	inputs[dirIota].Width = 30
 	inputs[dirIota].Prompt = ""
@@ -120,6 +125,7 @@ func initialModel(dirStr *string, cores int) model {
 	}
 	if !focusSet {
 		inputs[corIota].Focus()
+		focusSet = true
 	}
 	inputs[corIota].SetValue(strconv.Itoa(cores))
 	inputs[corIota].Placeholder = "Number of cores to use"
@@ -181,7 +187,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	return fmt.Sprintf(`Input the directory, token and number of cores to use:
+	return fmt.Sprintf(`Input the directory, cookie, and number of cores to use:
 
  %s
  %s
