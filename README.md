@@ -1,15 +1,11 @@
 # AGDownloader
 
-> [!IMPORTANT]
-> This program is under re-write
-> As the ability to obtain this token has been removed by the organization, a new version of the utility is coming made in Rust. Why the decision of rust? Why not, it is a learning project.
-
-AGDownloader is a simple and easy-to-use downloader for AulaGlobal (the use of moodle by the University Carlos III of Madrid). It is a command-line tool that allows you to download all the files from all the courses a user has access to.
+AGDownloader is a simple and easy-to-use downloader for AulaGlobal (the implementation of moodle by the University Carlos III of Madrid). It is a command-line tool that allows you to download all the files from all the courses a user has access to.
 
 You can also indicate the courseID or names of the courses you want to download, and the program will only download the files from those courses.
 
 ## Usage
-To download the programm, go to the [releases page](https://github.com/Astrak00/AGDownloader/releases/latest) and download the latest version for your operating system. You can also [build](#build-from-source) the program from source by following the instructions below. 
+To download the program, go to the [releases page](https://github.com/Astrak00/AGDownloader/releases/latest) and download the latest version for your operating system. You can also [build](#build-from-source) the program from source by following the instructions below. 
 > [!NOTE]
 > Darwin = MacOS
 > ARM = M1/M2/M3 and Snapdragon
@@ -19,7 +15,7 @@ To use AGDownloader, execute the following command:
 ```bash
 ./AGDownloader 
 ```
-You can specify some parameters to customize the download process but if you don't the program will ask you for them (except for the parameters that have a default value).
+You can specify some parameters to customize the download process but if you don't the program will ask you for them.
 
 ```bash
 ./AGDownloader -h
@@ -33,21 +29,26 @@ Usage of ./AGDownloader:
       --token string      Aula Global user security token 'aulaglobalmovil'
 ```
 
+If you don't specify this parameters, the program will guide you through the process of obtaining the token and setting the other parameters. If you have no token, you might need to use the Authentication cookie (you'll find the guide while running the program). You will need to log in into AulaGlobal and copy the cookie from the browser.
+
 ### Obtaining the token
 
-To obtain the token, you must log in to AulaGlobal and go to the preferences panel. There, you will find the token under the "Security keys" section. Copy the token and paste it into the program when prompted.
+You can't obtain the token easily by logging in. There are other ways, like inspecting the requests made by the mobile application. To obtain it, you can follow the instructions in the program using the cookie from authenticating in AulaGlobal, which saves the token in the file `token-file`.
 
-![Retrieving token](assets/instructions-token.gif)
+> Deprecated:
+>
+> To obtain the token, you must log in to AulaGlobal and go to the preferences panel. There, you will find the token under the "Security keys" section. Copy the token and paste it into the program when prompted.
+>![Retrieving token](assets/instructions-token.gif)
 
 ### Example
 
 This is an example of a full command:
 
 ```bash
-./AGDownloader --l 1 --token aaaa1111bbbb2222cccc3333dddd4444 --dir AulaGlobal-Copy --p 5 --courses "Inteligencia Distribuidos 123445"
+./AGDownloader --token aaaa1111bbbb2222cccc3333dddd4444 --dir download_files --p 4 --courses "Inteligencia Distribuidos 123445"
 ```                           
 
-This program will run in Spanish, with the secret token aaaa1111bbbb2222cccc3333dddd4444, in the folder AulaGlobal-Copy inside the folder where the program is being run, using 5 cores, and downloading the courses that contain the words "Inteligencia" or "Distributed" in their name or the course with the ID 123445.
+This program will run with the secret token aaaa1111bbbb2222cccc3333dddd4444, in the folder AulaGlobal-Copy inside the folder where the program is being run, using 5 cores, and downloading the courses that contain the words "Inteligencia" or "Distributed" in their name or the course with the ID 123445.
 
 #### Language
 
