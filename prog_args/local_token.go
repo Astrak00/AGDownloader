@@ -4,19 +4,24 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	cookie "github.com/Astrak00/AGDownloader/cookies"
 	"github.com/Astrak00/AGDownloader/types"
+	"github.com/fatih/color"
 )
 
 func ObtainingToken(arguments types.Prog_args) types.Prog_args {
 
 	// Check if the token is stored in a local file to prevent unecessary request
-	if _, err := os.Stat("token-file"); err == nil {
-		data, err := os.ReadFile("token-file")
+	if _, err := os.Stat(types.TokenDir); err == nil {
+		data, err := os.ReadFile(types.TokenDir)
 		if err != nil {
 			log.Fatalf("Error reading file%v: %v\n", types.TokenDir, err)
 		}
+
+		fmt.Println("Token token loaded from", types.TokenDir)
+
 		arguments.UserToken = string(data)
 	}
 
@@ -29,10 +34,9 @@ func ObtainingToken(arguments types.Prog_args) types.Prog_args {
 			if Knowledge_element("auth cookie") {
 				arguments.UserToken = cookie.GetTokenFromCookie(arguments)
 			} else {
-				fmt.Println("You must provide a cookie or a token to download the courses")
-				fmt.Println(cookie.CookieText)
-				fmt.Println()
-				fmt.Println(cookie.ObtainCookieText)
+				color.Yellow(cookie.CookieText)
+				color.Magenta(cookie.ObtainCookieText)
+				time.Sleep(2 * time.Second)
 				arguments.UserToken = cookie.GetTokenFromCookie(arguments)
 			}
 		}
@@ -53,4 +57,5 @@ func saveToken(token string) {
 	if err != nil {
 		log.Fatal("Error saving the token to a file", err)
 	}
+	fmt.Println("Token saved to", types.TokenDir)
 }

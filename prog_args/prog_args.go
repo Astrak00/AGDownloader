@@ -6,7 +6,6 @@ import (
 
 	types "github.com/Astrak00/AGDownloader/types"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/fatih/color"
 	"github.com/spf13/pflag"
 )
 
@@ -40,13 +39,6 @@ func ParseFlags() types.Prog_args {
 
 // Knowledge_token Ask the user if they know their token
 func AskForToken(arguments types.Prog_args) types.Prog_args {
-
-	// Attribution of the program creator
-	if arguments.Language == 1 {
-		color.Cyan("Programa creado por Astrak00 para descargar archivos de Aula Global en la UC3M\n")
-	} else {
-		color.Cyan("Program created by Astrak00 to download files from Aula Global at UC3M\n")
-	}
 
 	p := tea.NewProgram(initialModel(&arguments.DirPath, &arguments.UserToken, arguments.MaxGoroutines))
 

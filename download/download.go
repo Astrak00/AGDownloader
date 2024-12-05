@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sync"
 	"sync/atomic"
+	"log"
 
 	types "github.com/Astrak00/AGDownloader/types"
 
@@ -138,7 +139,7 @@ func DownloadFiles(filesStoreChan <-chan types.FileStore, maxGoroutines int) {
 	}()
 
 	if _, err := p.Run(); err != nil {
-		fmt.Printf("Error: %v\n", err)
+		log.Fatalf("Error: %v\n", err)
 	}
 }
 

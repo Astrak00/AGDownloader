@@ -15,8 +15,14 @@ import (
 
 func main() {
 	// Parse the flags to get the language, userToken, dirPath, maxGoroutines and coursesList
-
 	arguments := prog_args.ParseFlags()
+
+	// Attribution of the program creator
+	if arguments.Language == 1 {
+		color.Cyan("Programa creado por Astrak00 para descargar archivos de Aula Global en la UC3M\n\n")
+	} else {
+		color.Cyan("Program created by Astrak00 to download files from Aula Global at UC3M\n\n")
+	}
 
 	arguments = prog_args.ObtainingToken(arguments)
 
@@ -39,7 +45,7 @@ func main() {
 	filesStoreChan := make(chan types.FileStore, len(courses)*20)
 	errChan := make(chan error, len(courses))
 
-	// Creating a chanel to store the files that wull be downloaded
+	// Creating a chanel to store the files that will be downloaded
 	files.ListAllResourcess(downloadAll, courses, arguments.UserToken, arguments.DirPath, errChan, filesStoreChan, coursesList)
 
 	close(errChan)

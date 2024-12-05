@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"runtime"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/fatih/color"
 )
 
 type (
@@ -74,10 +74,8 @@ func initialModel(dirStr *string, tokenStr *string, cores int) model {
 	inputs[tokenIota].CharLimit = 32
 	inputs[tokenIota].Width = 32
 	if *tokenStr != "" {
-		fmt.Println(01)
 		inputs[tokenIota].SetValue(*tokenStr)
 	} else if !focusSet {
-		fmt.Println(02)
 		inputs[tokenIota].Prompt = ""
 		inputs[tokenIota].Focus()
 		focusSet = true
@@ -91,10 +89,8 @@ func initialModel(dirStr *string, tokenStr *string, cores int) model {
 	inputs[dirIota].Width = 30
 	inputs[dirIota].Prompt = ""
 	if *dirStr != "" {
-		fmt.Println(03)
 		inputs[dirIota].SetValue(*dirStr)
 	} else if !focusSet {
-		fmt.Println(04)
 		inputs[dirIota].Focus()
 		focusSet = true
 	}
@@ -103,7 +99,7 @@ func initialModel(dirStr *string, tokenStr *string, cores int) model {
 	// Cores input setup
 	inputs[corIota] = textinput.New()
 	if cores == -1 {
-		cores = 4
+		cores = runtime.NumCPU() / 2  // half of the total CPUs
 	}
 	if !focusSet {
 		inputs[corIota].Focus()
@@ -138,16 +134,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Quit
 			}
 			m.nextInput()
-		case tea.KeyCtrlC, tea.KeyEsc:
+		case tea.KeyCtrlC, tea.KeyEsc, tea.KeyCtrlD:
 			return m, tea.Quit
 		case tea.KeyShiftTab, tea.KeyCtrlP:
 			m.prevInput()
 		case tea.KeyTab, tea.KeyCtrlN:
 			m.nextInput()
-		case tea.KeyCtrlD:
-			// Exit the program if the user presses Ctrl+D
-			color.Red("Press CTRL+C to exit")
-			return m, tea.Quit
 		default:
 
 		}

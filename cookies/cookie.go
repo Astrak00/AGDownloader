@@ -5,12 +5,12 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"runtime"
 
 	"github.com/Astrak00/AGDownloader/types"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/fatih/color"
 )
 
 type (
@@ -26,13 +26,8 @@ const (
 const (
 	hotPink          = lipgloss.Color("#FF06B7")
 	darkGray         = lipgloss.Color("#767676")
-	CookieText       = "To do this, the easiest way is to log in to Aula Global, open the developer tools, go to the console tab and run the following command:"
-	ObtainCookieText = `function getCookie() {
-    const value = '; ' + document.cookie;
-    const parts = value.split('; MoodleSessionag=');
-    if (parts.length === 2) console.log(parts.pop().split(';').shift());
-}
-getCookie();`
+	CookieText       = "\nYou must provide a cookie to obtain the token. To do this:\n1. Log into Aula Global\n2. Open the developer tools (F12)\n3. Go to the console tab, and run the following command:"
+	ObtainCookieText = "\n   console.log(document.cookie.split('; MoodleSessionag=').pop().split(';').shift())"
 )
 
 var (
@@ -55,12 +50,10 @@ func GetTokenFromCookie(arguments types.Prog_args) string {
 	}
 
 	cookie := model_out.(model).inputs[authCookieIndex].Value()
+
 	// Convert from cookie to token
-
 	token := cookie_to_token(cookie)
-
-	fmt.Println("Your token is", token)
-
+	
 	return token
 
 }
@@ -118,7 +111,7 @@ func initialModel(dirStr *string, cores int) model {
 
 	inputs[corIota] = textinput.New()
 	if cores == -1 {
-		cores = 4
+		cores = runtime.NumCPU() / 2  // half of the total CPUs
 	}
 	inputs[corIota].SetValue(strconv.Itoa(cores))
 	inputs[corIota].Placeholder = "Number of cores to use"
@@ -149,16 +142,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Quit
 			}
 			m.nextInput()
-		case tea.KeyCtrlC, tea.KeyEsc:
+		case tea.KeyCtrlC, tea.KeyEsc, tea.KeyCtrlD:
 			return m, tea.Quit
 		case tea.KeyShiftTab, tea.KeyCtrlP:
 			m.prevInput()
 		case tea.KeyTab, tea.KeyCtrlN:
 			m.nextInput()
-		case tea.KeyCtrlD:
-			// Exit the program if the user presses Ctrl+D
-			color.Red("Press CTRL+C to exit")
-			return m, tea.Quit
 		default:
 
 		}
