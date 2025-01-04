@@ -49,7 +49,7 @@ func getCourseContent(token, courseID string) ([]types.File, error) {
 		if len(courseParsed[i].Modules) != 0 {
 			sectionName := removeTags(courseParsed[i].Summary)
 			// Create a folder for the section
-			folderName := fmt.Sprint(courseID) + "/" + sectionName
+			folderName := "/" + sectionName
 			if sectionName != "" {
 				os.Mkdir(folderName, 0755)
 			}
@@ -57,7 +57,6 @@ func getCourseContent(token, courseID string) ([]types.File, error) {
 				if len(courseParsed[i].Modules[j].Contents) != 0 {
 					for k := 0; k < len(courseParsed[i].Modules[j].Contents); k++ {
 						if courseParsed[i].Modules[j].Contents[k].Type == "file" {
-							//fmt.Println("	", courseParsed[i].Modules[j].Contents[k].Filename)
 							filesPresentInCourse = append(filesPresentInCourse, types.File{
 								FileName: filepath.Join(folderName, courseParsed[i].Modules[j].Contents[k].Filename),
 								FileURL:  courseParsed[i].Modules[j].Contents[k].Fileurl,
@@ -113,7 +112,6 @@ func removeTags(s string) string {
 func catalogFiles(courseName string, token string, files []types.File, dirPath string, filesStoreChan chan<- types.FileStore) {
 	for _, file := range files {
 		url := file.FileURL + "&token=" + token
-
 		filePath := filepath.Join(dirPath, courseName, file.FileName)
 
 		// Send the file to the channel
