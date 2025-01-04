@@ -1,11 +1,13 @@
 package files
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"sync"
 
@@ -19,7 +21,9 @@ func processCourse(course types.Course, userToken string, dirPath string, errCha
 		errChan <- fmt.Errorf("error getting course content: %v", err)
 	}
 	if len(files) > 0 {
-		catalogFiles(course.Name, userToken, files, dirPath, filesStoreChan)
+		// Replace the "/" in the course name to avoid creating subdirectories
+		courseName := strings.ReplaceAll(course.Name, "/", "-")
+		catalogFiles(courseName, userToken, files, dirPath, filesStoreChan)
 	}
 }
 
@@ -27,64 +31,82 @@ func processCourse(course types.Course, userToken string, dirPath string, errCha
 // Fetches the course content from the moodle API
 // Scrapes the file names, urls and types with regex
 func getCourseContent(token, courseID string) ([]types.File, error) {
-	url := fmt.Sprintf("https://%s%s?wstoken=%s&wsfunction=core_course_get_contents&courseid=%s", types.Domain, types.Webservice, token, courseID)
+	url := fmt.Sprintf("https://%s%s?wstoken=%s&wsfunction=core_course_get_contents&moodlewsrestformat=json&courseid=%s", types.Domain, types.Webservice, token, courseID)
 
-	resp, err := http.Get(url)
+	// Get the json from the URL
+	jsonData := getJson(url)
+
+	// Parse the json
+	var courseParsed types.WebCourse
+	err := json.Unmarshal(jsonData, &courseParsed)
 	if err != nil {
-		return nil, err
+		log.Fatal(err)
 	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			fmt.Println("Error closing body")
-		}
-	}(resp.Body)
 
-	body, err := io.ReadAll(resp.Body)
+	// Get the names, urls and types of the files
+	filesPresentInCourse := make([]types.File, 0)
+	for i := 0; i < len(courseParsed); i++ {
+		if len(courseParsed[i].Modules) != 0 {
+			sectionName := removeTags(courseParsed[i].Summary)
+			// Create a folder for the section
+			folderName := fmt.Sprint(courseID) + "/" + sectionName
+			if sectionName != "" {
+				os.Mkdir(folderName, 0755)
+			}
+			for j := 0; j < len(courseParsed[i].Modules); j++ {
+				if len(courseParsed[i].Modules[j].Contents) != 0 {
+					for k := 0; k < len(courseParsed[i].Modules[j].Contents); k++ {
+						if courseParsed[i].Modules[j].Contents[k].Type == "file" {
+							//fmt.Println("	", courseParsed[i].Modules[j].Contents[k].Filename)
+							filesPresentInCourse = append(filesPresentInCourse, types.File{
+								FileName: filepath.Join(folderName, courseParsed[i].Modules[j].Contents[k].Filename),
+								FileURL:  courseParsed[i].Modules[j].Contents[k].Fileurl,
+							})
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return filesPresentInCourse, nil
+}
+
+func getJson(URL string) []byte {
+	// Get the json from the URL
+	resp, err := http.Get(URL)
 	if err != nil {
-		return nil, err
+		log.Fatal(err)
 	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			fmt.Println("Error closing body")
-		}
-	}(resp.Body)
+	defer resp.Body.Close()
 
-	// Find the file names, urls and types with regex
-	fileNames := regexp.MustCompile(`<KEY name="filename"><VALUE>([^<]+)</VALUE>`)
-	fileURLs := regexp.MustCompile(`<KEY name="fileurl"><VALUE>([^<]+)</VALUE>`)
-	fileTypes := regexp.MustCompile(`<KEY name="type"><VALUE>([^<]+)</VALUE>`)
-
-	names := fileNames.FindAllStringSubmatch(string(body), -1)
-	// If no files are found, return nil and prevent further execution and useless processing
-	if len(names) == 0 {
-		// color.Red("No files found\n")
-		return nil, nil
+	// Read the json
+	jsonData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
 	}
-	urls := fileURLs.FindAllStringSubmatch(string(body), -1)
-	fileType := fileTypes.FindAllStringSubmatch(string(body), -1)
+	return jsonData
+}
 
-	// Insert an empy url to the urls at the position i to fix an empty url error in moodle
-	for i := range names {
-		if names[i][1] == "structure" {
-			urls = append(urls[:i], append([][]string{{""}}, urls[i:]...)...)
-			break
-		}
-	}
-
-	// Join the names and urls into a File struct
-	files := make([]types.File, 0, len(names))
-	for i, name := range names {
-		if fileType[i][1] == "file" {
-			files = append(files, types.File{
-				FileName: name[1],
-				FileURL:  urls[i][1],
-				FileType: fileType[i][1],
-			})
+func removeTags(s string) string {
+	// Remove tags from a string using a more efficient approach
+	var result []rune
+	inTag := false
+	for _, r := range s {
+		switch {
+		case r == '<':
+			inTag = true
+		case r == '>':
+			inTag = false
+		case r == '\n' || r == '\t' || r == '\r':
+			continue
+		default:
+			if !inTag {
+				result = append(result, r)
+			}
 		}
 	}
-	return files, nil
+	return strings.Trim(string(result), " ")
 }
 
 // Formats the files to be downloaded, adding the course name and sends them to the channel
@@ -92,12 +114,10 @@ func catalogFiles(courseName string, token string, files []types.File, dirPath s
 	for _, file := range files {
 		url := file.FileURL + "&token=" + token
 
-		// Replace the "/" in the course name to avoid creating subdirectories
-		courseName = strings.ReplaceAll(courseName, "/", "-")
 		filePath := filepath.Join(dirPath, courseName, file.FileName)
 
 		// Send the file to the channel
-		filesStoreChan <- types.FileStore{FileName: file.FileName, FileURL: url, FileType: file.FileType, Dir: filePath}
+		filesStoreChan <- types.FileStore{FileName: file.FileName, FileURL: url, Dir: filePath}
 	}
 }
 
