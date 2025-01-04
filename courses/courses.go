@@ -54,7 +54,9 @@ func GetCourses(token string, userID string, language int) ([]types.Course, erro
 		} else {
 			name_def = nameEN
 		}
-		courses = append(courses, types.Course{Name: name_def, ID: ids[i][1]})
+		if name_def != "Secretaría EPS" && !strings.Contains(name_def, "Convenio") && !strings.Contains(name_def, "Delegación") {
+			courses = append(courses, types.Course{Name: name_def, ID: ids[i][1]})
+		}
 	}
 
 	defer func() {

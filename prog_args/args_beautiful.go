@@ -103,7 +103,7 @@ func initialModel(dirStr *string, tokenStr *string, cores int) model {
 
 	// Cores input setup
 	inputs[corIota] = textinput.New()
-	if cores == -1 {
+	if cores == 0 {
 		cores = runtime.NumCPU() / 2 // half of the total CPUs
 	}
 	if !focusAlreadySet {
@@ -166,7 +166,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	return fmt.Sprintf(`Input the directory, token, and number of cores to use:
+	return fmt.Sprintf(`Input the directory, token, and number of cores to use (-1 means all cores):
 
  %s
  %s

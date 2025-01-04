@@ -14,7 +14,8 @@ func ParseFlags() types.Prog_args {
 	languageStr := pflag.String("l", "EN", "Choose your language: ES: Español, EN:English")
 	token := pflag.String("token", "", "Aula Global user security token 'aulaglobalmovil'")
 	dir := pflag.String("dir", "", "Directory where you want to save the files")
-	cores := pflag.Int("p", -1, "Cores to be used while downloading")
+	cores := pflag.Int("p", 0, "Cores to be used while downloading")
+	fast := pflag.Bool("fast", false, "Set MaxGoroutines to the number of files for fastest downloading")
 	var courses []string
 	pflag.StringSliceVar(&courses, "courses", []string{}, "Ids or names of the courses to be downloaded, enclosed in \", separated by spaces. \n\"all\" downloads all courses")
 
@@ -26,6 +27,10 @@ func ParseFlags() types.Prog_args {
 		language = 1
 	default:
 		language = 2
+	}
+
+	if *fast {
+		*cores = -1
 	}
 
 	return types.Prog_args{

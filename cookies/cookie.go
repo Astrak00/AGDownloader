@@ -110,7 +110,7 @@ func initialModel(dirStr *string, cores int) model {
 	inputs[dirIota].Validate = dirValidator
 
 	inputs[corIota] = textinput.New()
-	if cores == -1 {
+	if cores == 0 {
 		cores = runtime.NumCPU() / 2  // half of the total CPUs
 	}
 	inputs[corIota].SetValue(strconv.Itoa(cores))
