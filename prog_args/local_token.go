@@ -19,9 +19,7 @@ func ObtainingToken(arguments types.Prog_args) types.Prog_args {
 		if err != nil {
 			log.Fatalf("Error reading file%v: %v\n", types.TokenDir, err)
 		}
-
-		fmt.Println("Token token loaded from", types.TokenDir)
-
+		//fmt.Println("Token token loaded from", types.TokenDir)
 		arguments.UserToken = string(data)
 	}
 

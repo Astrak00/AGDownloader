@@ -16,9 +16,9 @@ import (
 // GetCourses Gets the courses, the localized name and ID, given a userID
 func GetCourses(token string, userID string, language int) ([]types.Course, error) {
 	if language == 1 {
-		color.Yellow("Obteniendo cursos...\n")
+		color.Yellow("Obteniendo cursos de AulaGlobal...\n")
 	} else {
-		color.Yellow("Getting courses...\n")
+		color.Yellow("Getting courses from AulaGlobal...\n")
 	}
 
 	url := fmt.Sprintf("https://%s%s?wstoken=%s&wsfunction=core_enrol_get_users_courses&userid=%s", types.Domain, types.Webservice, token, userID)
@@ -101,11 +101,13 @@ func getCoursesNamesLanguages(name string) (string, string) {
 }
 
 // SelectCourses prompts the user to select the courses to download
-func SelectCourses(language int, coursesList []string, courses []types.Course) (bool, []string) {
-	downloadAll := false
+func SelectCourses(language int, coursesList []string, courses []types.Course) []types.Course {
+	// Cehck if the user wants to download all the courses and return the courses
 	if len(coursesList) != 0 && coursesList[0] == "all" {
-		downloadAll = true
+		return courses
 	} else if len(coursesList) == 0 {
+		// In case the user does not want to download all the courses, show a list of checkboxes with the courses
+		// to allow the user to select them interactively
 		prompt := "Select the courses you want to download\n"
 		if language == 1 {
 			prompt = "Selecciona los cursos que quieres descargar\n"
@@ -113,7 +115,16 @@ func SelectCourses(language int, coursesList []string, courses []types.Course) (
 		listCoursesList := getCoursesNameByLanguage(courses)
 		coursesList = checkboxesCourses(prompt, listCoursesList)
 	}
-	return downloadAll, coursesList
+
+	coursesToDownload := make([]types.Course, 0, len(coursesList))
+	for _, course := range coursesList {
+		for _, c := range courses {
+			if course == c.Name {
+				coursesToDownload = append(coursesToDownload, c)
+			}
+		}
+	}
+	return coursesToDownload
 }
 
 // Map the courses to obtain a []string with the names of the courses

@@ -3,8 +3,8 @@ package prog_args
 import (
 	"fmt"
 	"regexp"
-	"strconv"
 	"runtime"
+	"strconv"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -66,19 +66,23 @@ func dirValidator(s string) error {
 
 func initialModel(dirStr *string, tokenStr *string, cores int) model {
 	var inputs []textinput.Model = make([]textinput.Model, 3)
-	focusSet := false
+	focusAlreadySet := false
+	focusedResult := 0
 
 	// Token input setup
 	inputs[tokenIota] = textinput.New()
 	inputs[tokenIota].Placeholder = "Token from AulaGlobal website"
 	inputs[tokenIota].CharLimit = 32
 	inputs[tokenIota].Width = 32
+	// If the token is already known, set it
+	fmt.Println("This is the token: ", *tokenStr)
 	if *tokenStr != "" {
 		inputs[tokenIota].SetValue(*tokenStr)
-	} else if !focusSet {
+	} else {
 		inputs[tokenIota].Prompt = ""
 		inputs[tokenIota].Focus()
-		focusSet = true
+		focusAlreadySet = true
+		focusedResult = 0
 	}
 	inputs[tokenIota].Validate = tokenValidator
 
@@ -90,19 +94,21 @@ func initialModel(dirStr *string, tokenStr *string, cores int) model {
 	inputs[dirIota].Prompt = ""
 	if *dirStr != "" {
 		inputs[dirIota].SetValue(*dirStr)
-	} else if !focusSet {
+	} else if !focusAlreadySet {
 		inputs[dirIota].Focus()
-		focusSet = true
+		focusAlreadySet = true
+		focusedResult = 1
 	}
 	inputs[dirIota].Validate = dirValidator
 
 	// Cores input setup
 	inputs[corIota] = textinput.New()
 	if cores == -1 {
-		cores = runtime.NumCPU() / 2  // half of the total CPUs
+		cores = runtime.NumCPU() / 2 // half of the total CPUs
 	}
-	if !focusSet {
+	if !focusAlreadySet {
 		inputs[corIota].Focus()
+		focusedResult = 2
 	}
 	inputs[corIota].SetValue(strconv.Itoa(cores))
 	inputs[corIota].Placeholder = "Number of cores to use"
@@ -113,11 +119,10 @@ func initialModel(dirStr *string, tokenStr *string, cores int) model {
 
 	return model{
 		inputs:  inputs,
-		focused: 0,
+		focused: focusedResult,
 		err:     nil,
 	}
 }
-
 
 func (m model) Init() tea.Cmd {
 	return textinput.Blink

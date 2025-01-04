@@ -6,7 +6,7 @@ import (
 
 	c "github.com/Astrak00/AGDownloader/courses"
 	download "github.com/Astrak00/AGDownloader/download"
-	files "github.com/Astrak00/AGDownloader/files"
+	"github.com/Astrak00/AGDownloader/files"
 	prog_args "github.com/Astrak00/AGDownloader/prog_args"
 	types "github.com/Astrak00/AGDownloader/types"
 	u "github.com/Astrak00/AGDownloader/user"
@@ -39,14 +39,14 @@ func main() {
 	}
 
 	// Create an interactive list so the user can select the courses to download
-	downloadAll, coursesList := c.SelectCourses(arguments.Language, arguments.CoursesList, courses)
+	coursesList := c.SelectCourses(arguments.Language, arguments.CoursesList, courses)
 
 	// Create a channel to store the files and another for the errors that may occur when listing all the resources to download
 	filesStoreChan := make(chan types.FileStore, len(courses)*20)
 	errChan := make(chan error, len(courses))
 
 	// Creating a chanel to store the files that will be downloaded
-	files.ListAllResourcess(downloadAll, courses, arguments.UserToken, arguments.DirPath, errChan, filesStoreChan, coursesList)
+	files.ListAllResourcess(coursesList, arguments.UserToken, arguments.DirPath, errChan, filesStoreChan)
 
 	close(errChan)
 	close(filesStoreChan)
