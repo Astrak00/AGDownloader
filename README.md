@@ -21,11 +21,12 @@ You can specify some parameters to customize the download process but if you don
 ./AGDownloader -h
 
 Usage of ./AGDownloader:
-      --courses strings   Ids or names of the courses to be downloaded, enclosed in ", separated by spaces. 
+     --courses strings   Ids or names of the courses to be downloaded, enclosed in ", separated by spaces. 
                           "all" downloads all courses
       --dir string        Directory where you want to save the files
-      --l int             Choose your language: 1: Español, 2:English
-      --p int             Cores to be used while downloading (default 4)
+      --fast              Set MaxGoroutines to the number of files for fastest downloading
+      --l string          Choose your language: ES: Español, EN:English (default "EN")
+      --p int             Cores to be used while downloading
       --token string      Aula Global user security token 'aulaglobalmovil'
 ```
 
@@ -80,7 +81,7 @@ You can specify the number of cores you want to use while downloading the files 
 ```
 ./AGDownload --p 8
 ```
-
+You can also specify the `--fast` flag that sets the number of processes to the total number of files you will be downloading. This is the fastest way of downloading but may consume more resources.
 
 
 
