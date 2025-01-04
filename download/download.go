@@ -3,12 +3,13 @@ package download
 import (
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
-	"log"
 
 	types "github.com/Astrak00/AGDownloader/types"
 
@@ -18,6 +19,7 @@ import (
 
 type model struct {
 	totalFiles     int32
+	courseIDMap    map[string]string
 	completedFiles int32
 	currentFile    string
 	errs           []string
@@ -71,9 +73,13 @@ func (m model) View() string {
 		Render(fmt.Sprintf("Downloading files...\n%s\nCompleted: %d/%d\n", bar, m.completedFiles, m.totalFiles))
 
 	if m.currentFile != "" {
+		courseName := m.courseIDMap[m.currentFile[:6]]
+		if idx := strings.Index(courseName, "/"); idx != -1 {
+			courseName = courseName[:idx-3]
+		}
 		view += lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#FF8C00")).
-			Render(fmt.Sprintf("\nCurrent file: %s\n", m.currentFile))
+			Render(fmt.Sprintf("\nCurrent file: %s/%s\n", courseName, m.currentFile[7:]))
 	}
 	if len(m.errs) > 0 {
 		view += lipgloss.NewStyle().
@@ -105,10 +111,18 @@ func repeat(char rune, count int) []rune {
 }
 
 // DownloadFiles orchestrates the file downloads and displays progress using Bubble Tea.
-func DownloadFiles(filesStoreChan <-chan types.FileStore, maxGoroutines int) {
+func DownloadFiles(filesStoreChan <-chan types.FileStore, maxGoroutines int, courses []types.Course) {
 	totalFiles := len(filesStoreChan)
+
+	// Convert the courses to a map for easy lookup
+	courseIDMap := make(map[string]string)
+	for _, course := range courses {
+		courseIDMap[course.ID] = course.Name
+	}
+
 	m := model{
-		totalFiles: int32(totalFiles),
+		totalFiles:  int32(totalFiles),
+		courseIDMap: courseIDMap,
 	}
 
 	// Create the Bubble Tea program

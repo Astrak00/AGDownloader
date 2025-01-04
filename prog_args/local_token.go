@@ -39,7 +39,9 @@ func ObtainingToken(arguments types.Prog_args) types.Prog_args {
 			}
 		}
 	} else {
-		arguments = AskForToken(arguments)
+		if arguments.UserToken == "" || arguments.DirPath == "" || arguments.MaxGoroutines == 0 {
+			arguments = AskForToken(arguments)
+		}
 	}
 
 	saveToken(arguments.UserToken)

@@ -42,7 +42,7 @@ func corValidator(s string) error {
 	// Number of cores should be an integer
 	_, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
-		return fmt.Errorf("cores must be an integer")
+		return fmt.Errorf("the number of cores must be an integer")
 	}
 	return nil
 }

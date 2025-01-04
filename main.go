@@ -61,7 +61,7 @@ func main() {
 	if arguments.MaxGoroutines == -1 {
 		arguments.MaxGoroutines = len(filesStoreChan)
 	}
-	download.DownloadFiles(filesStoreChan, arguments.MaxGoroutines)
+	download.DownloadFiles(filesStoreChan, arguments.MaxGoroutines, courses)
 
 	if arguments.Language == 1 {
 		color.Green("Descarga completada\n")
