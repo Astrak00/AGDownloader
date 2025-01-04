@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -73,13 +72,9 @@ func (m model) View() string {
 		Render(fmt.Sprintf("Downloading files...\n%s\nCompleted: %d/%d\n", bar, m.completedFiles, m.totalFiles))
 
 	if m.currentFile != "" {
-		courseName := m.courseIDMap[m.currentFile[:6]]
-		if idx := strings.Index(courseName, "/"); idx != -1 {
-			courseName = courseName[:idx-3]
-		}
 		view += lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#FF8C00")).
-			Render(fmt.Sprintf("\nCurrent file: %s/%s\n", courseName, m.currentFile[7:]))
+			Render(fmt.Sprintf("\nCurrent file: %s\n", m.currentFile[1:]))
 	}
 	if len(m.errs) > 0 {
 		view += lipgloss.NewStyle().
