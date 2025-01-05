@@ -39,17 +39,25 @@ func GetCourses(token string, userID string, language int) ([]types.Course, erro
 		} else {
 			name_def = nameEN
 		}
-		if name_def != "Secretaría EPS" &&
-			!strings.Contains(name_def, "Convenio") &&
-			!strings.Contains(name_def, "Delegación") &&
-			!strings.Contains(name_def, "Student Room") &&
-			!strings.Contains(name_def, "Bachelor") {
+		if name_def != "Secretaría EPS" && !containsInvalidNames(name_def) {
 			courses = append(courses, types.Course{Name: name_def, ID: strconv.Itoa(course.ID)})
 		}
 	}
 
 	defer color.Green("Number of courses found: %d\n", len(courses))
 	return courses, nil
+}
+
+func containsInvalidNames(name string) bool {
+	invalidCourseNames := []string{"Convenio", "Delegación", "Secretaría", "Student Room", "Sala de Estudiantes", "Bachelor"}
+
+	for _, invalidName := range invalidCourseNames {
+		if strings.Contains(name, invalidName) {
+			return true
+		}
+	}
+	return false
+
 }
 
 // Get the names of the courses in Spanish and English
