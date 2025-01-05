@@ -75,7 +75,7 @@ func (m model) View() string {
 	if m.currentFile != "" {
 		view += lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#FF8C00")).
-			Render(fmt.Sprintf("\nCurrent file: %s\n", m.currentFile[1:]))
+			Render(fmt.Sprintf("\nCurrent file: %s\n", m.currentFile))
 	}
 	if len(m.errs) > 0 {
 		view += lipgloss.NewStyle().
