@@ -54,6 +54,9 @@ func AskForToken(arguments types.Prog_args) types.Prog_args {
 
 	tokenObtained := finalModel.(model).inputs[tokenIota].Value()
 	dirObtained := finalModel.(model).inputs[dirIota].Value()
+	if dirObtained == "" {
+		dirObtained = "downloaded_files"
+	}
 	coresObtained, err := strconv.Atoi(finalModel.(model).inputs[corIota].Value())
 	if err != nil {
 		log.Fatal(err)
