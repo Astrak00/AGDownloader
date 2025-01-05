@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 
 	types "github.com/Astrak00/AGDownloader/types"
+	"github.com/fatih/color"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -120,6 +121,11 @@ func DownloadFiles(filesStoreChan <-chan types.FileStore, maxGoroutines int, cou
 		courseIDMap: courseIDMap,
 	}
 
+	if m.totalFiles == 0 {
+		color.Red("No files to download\n")
+		return
+	}
+
 	// Create the Bubble Tea program
 	p := tea.NewProgram(m)
 
@@ -150,6 +156,7 @@ func DownloadFiles(filesStoreChan <-chan types.FileStore, maxGoroutines int, cou
 	if _, err := p.Run(); err != nil {
 		log.Fatalf("Error: %v\n", err)
 	}
+	color.Green("Download completed successfully \n")
 }
 
 func downloadFile(fileStore types.FileStore) error {

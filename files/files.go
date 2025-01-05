@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -46,17 +45,13 @@ func getCourseContent(token, courseID string) ([]types.File, error) {
 	for i := 0; i < len(courseParsed); i++ {
 		if len(courseParsed[i].Modules) != 0 {
 			sectionName := removeTags(courseParsed[i].Summary)
-			// Create a folder for the section
-			folderName := "/" + sectionName
-			if sectionName != "" {
-				os.Mkdir(folderName, 0755)
-			}
+
 			for j := 0; j < len(courseParsed[i].Modules); j++ {
 				if len(courseParsed[i].Modules[j].Contents) != 0 {
 					for k := 0; k < len(courseParsed[i].Modules[j].Contents); k++ {
 						if courseParsed[i].Modules[j].Contents[k].Type == "file" {
 							filesPresentInCourse = append(filesPresentInCourse, types.File{
-								FileName: filepath.Join(folderName, courseParsed[i].Modules[j].Contents[k].Filename),
+								FileName: filepath.Join(sectionName, courseParsed[i].Modules[j].Contents[k].Filename),
 								FileURL:  courseParsed[i].Modules[j].Contents[k].Fileurl,
 							})
 						}

@@ -15,7 +15,7 @@ import (
 
 // GetCourses Gets the courses, the localized name and ID, given a userID
 func GetCourses(token string, userID string, language int) ([]types.Course, error) {
-	color.Yellow("Getting courses from AulaGlobal...\n")
+	color.Yellow("Fetching courses from AulaGlobal...\n")
 
 	url := fmt.Sprintf("https://%s%s?wstoken=%s&wsfunction=core_enrol_get_users_courses&userid=%s&moodlewsrestformat=json", types.Domain, types.Webservice, token, userID)
 
@@ -41,7 +41,9 @@ func GetCourses(token string, userID string, language int) ([]types.Course, erro
 		}
 		if name_def != "Secretaría EPS" &&
 			!strings.Contains(name_def, "Convenio") &&
-			!strings.Contains(name_def, "Delegación") {
+			!strings.Contains(name_def, "Delegación") &&
+			!strings.Contains(name_def, "Student Room") &&
+			!strings.Contains(name_def, "Bachelor") {
 			courses = append(courses, types.Course{Name: name_def, ID: strconv.Itoa(course.ID)})
 		}
 	}

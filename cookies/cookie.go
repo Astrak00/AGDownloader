@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 	"regexp"
-	"strconv"
 	"runtime"
+	"strconv"
 
 	"github.com/Astrak00/AGDownloader/types"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -53,7 +53,7 @@ func GetTokenFromCookie(arguments types.Prog_args) string {
 
 	// Convert from cookie to token
 	token := cookie_to_token(cookie)
-	
+
 	return token
 
 }
@@ -111,7 +111,7 @@ func initialModel(dirStr *string, cores int) model {
 
 	inputs[corIota] = textinput.New()
 	if cores == 0 {
-		cores = runtime.NumCPU() / 2  // half of the total CPUs
+		cores = runtime.NumCPU() / 2 // half of the total CPUs
 	}
 	inputs[corIota].SetValue(strconv.Itoa(cores))
 	inputs[corIota].Placeholder = "Number of cores to use"

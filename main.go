@@ -59,6 +59,4 @@ func main() {
 	}
 	download.DownloadFiles(filesStoreChan, arguments.MaxGoroutines, courses)
 
-	color.Green("Download completed\n")
-
 }
