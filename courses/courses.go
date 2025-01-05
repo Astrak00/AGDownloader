@@ -1,10 +1,10 @@
 package courses
 
 import (
+	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"regexp"
+	"log"
+	"strconv"
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -21,41 +21,32 @@ func GetCourses(token string, userID string, language int) ([]types.Course, erro
 		color.Yellow("Getting courses from AulaGlobal...\n")
 	}
 
-	url := fmt.Sprintf("https://%s%s?wstoken=%s&wsfunction=core_enrol_get_users_courses&userid=%s", types.Domain, types.Webservice, token, userID)
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			fmt.Println("Error closing body")
-		}
-	}(resp.Body)
+	url := fmt.Sprintf("https://%s%s?wstoken=%s&wsfunction=core_enrol_get_users_courses&userid=%s&moodlewsrestformat=json", types.Domain, types.Webservice, token, userID)
 
-	body, err := io.ReadAll(resp.Body)
+	jsonData := types.GetJson(url)
+
+	// Parse the json
+	var userParsed types.WebUser
+	err := json.Unmarshal(jsonData, &userParsed)
 	if err != nil {
-		return nil, fmt.Errorf("mismatch in course names and IDs")
+		log.Fatal(err)
 	}
 
-	// Find the course names and ids with two regex and then join them into a Course struct
-	courseNames := regexp.MustCompile(`<KEY name="fullname"><VALUE>([^<]+)</VALUE>`)
-	courseIDs := regexp.MustCompile(`<KEY name="id"><VALUE>([^<]+)</VALUE>`)
-	names := courseNames.FindAllStringSubmatch(string(body), -1)
-	ids := courseIDs.FindAllStringSubmatch(string(body), -1)
-
-	courses := make([]types.Course, 0, len(names))
+	// Get the names and IDs of the courses
+	courses := make([]types.Course, 0, len(userParsed))
 	name_def := ""
-	for i, name := range names {
+	for _, course := range userParsed {
 		// Localize the course name
-		nameEs, nameEN := getCoursesNamesLanguages(name[1])
+		nameEs, nameEN := getCoursesNamesLanguages(course.Fullname)
 		if language == 1 {
 			name_def = nameEs
 		} else {
 			name_def = nameEN
 		}
-		if name_def != "Secretaría EPS" && !strings.Contains(name_def, "Convenio") && !strings.Contains(name_def, "Delegación") {
-			courses = append(courses, types.Course{Name: name_def, ID: ids[i][1]})
+		if name_def != "Secretaría EPS" &&
+			!strings.Contains(name_def, "Convenio") &&
+			!strings.Contains(name_def, "Delegación") {
+			courses = append(courses, types.Course{Name: name_def, ID: strconv.Itoa(course.ID)})
 		}
 	}
 

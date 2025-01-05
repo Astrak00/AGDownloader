@@ -3,9 +3,7 @@ package files
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -34,7 +32,7 @@ func getCourseContent(token, courseID string) ([]types.File, error) {
 	url := fmt.Sprintf("https://%s%s?wstoken=%s&wsfunction=core_course_get_contents&moodlewsrestformat=json&courseid=%s", types.Domain, types.Webservice, token, courseID)
 
 	// Get the json from the URL
-	jsonData := getJson(url)
+	jsonData := types.GetJson(url)
 
 	// Parse the json
 	var courseParsed types.WebCourse
@@ -69,22 +67,6 @@ func getCourseContent(token, courseID string) ([]types.File, error) {
 	}
 
 	return filesPresentInCourse, nil
-}
-
-func getJson(URL string) []byte {
-	// Get the json from the URL
-	resp, err := http.Get(URL)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
-
-	// Read the json
-	jsonData, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return jsonData
 }
 
 func removeTags(s string) string {
