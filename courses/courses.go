@@ -15,11 +15,7 @@ import (
 
 // GetCourses Gets the courses, the localized name and ID, given a userID
 func GetCourses(token string, userID string, language int) ([]types.Course, error) {
-	if language == 1 {
-		color.Yellow("Obteniendo cursos de AulaGlobal...\n")
-	} else {
-		color.Yellow("Getting courses from AulaGlobal...\n")
-	}
+	color.Yellow("Getting courses from AulaGlobal...\n")
 
 	url := fmt.Sprintf("https://%s%s?wstoken=%s&wsfunction=core_enrol_get_users_courses&userid=%s&moodlewsrestformat=json", types.Domain, types.Webservice, token, userID)
 
@@ -50,46 +46,35 @@ func GetCourses(token string, userID string, language int) ([]types.Course, erro
 		}
 	}
 
-	defer func() {
-		if language == 1 {
-			color.Green("Cursos encontrados: %d\n", len(courses))
-		} else {
-			color.Green("Courses found: %d\n", len(courses))
-		}
-	}()
-
+	defer color.Green("Number of courses found: %d\n", len(courses))
 	return courses, nil
 }
 
 // Get the names of the courses in Spanish and English
 // This function localizes the names of the courses in Spanish and English
-// Separating the names by -1C or -2C
+// Separating the names by -1C, -2C, -1S, -2S, Bachelor, Student, Convenio-Bilateral
 func getCoursesNamesLanguages(name string) (string, string) {
-	// Find where the names are separated, by -1C or -2C and return the names in Spanish and English
-	idx := 0
-	if strings.Contains(name, "-1C") {
-		idx = strings.Index(name, "-1C")
-	} else if strings.Contains(name, "-2C") {
-		idx = strings.Index(name, "-2C")
-	} else if strings.Contains(name, "-1S") {
-		idx = strings.Index(name, "-1S")
-	} else if strings.Contains(name, "-2S") {
-		idx = strings.Index(name, "-2S")
-	}
-	if idx != 0 {
-		return name[:idx+3], name[idx+3:]
+	// Define the first group of separators with priority.
+	firstGroup := []string{"-1C", "-2C", "-1S", "-2S"}
+
+	// Iterate over the first group to find the earliest separator.
+	for _, sep := range firstGroup {
+		if idx := strings.Index(name, sep); idx > 0 { // idx > 0 ensures the separator is not at the start
+			return name[:idx+len(sep)], name[idx+len(sep):]
+		}
 	}
 
-	if strings.Contains(name, "Bachelor") {
-		idx = strings.Index(name, "Bachelor")
-		return name[:idx], name[idx:]
-	} else if strings.Contains(name, "Student") {
-		idx = strings.Index(name, "Student")
-		return name[:idx], name[idx:]
-	} else if strings.Contains(name, "Convenio-Bilateral s") {
-		idx = strings.Index(name, "Convenio-Bilateral s")
-		return name[:idx], name[idx:]
+	// Define the second group of separators.
+	secondGroup := []string{"Bachelor", "Student", "Convenio-Bilateral s"}
+
+	// Iterate over the second group to find the earliest separator.
+	for _, sep := range secondGroup {
+		if idx := strings.Index(name, sep); idx != -1 { // idx != -1 means the separator exists
+			return name[:idx], name[idx:]
+		}
 	}
+
+	// If no separators are found, return the original name twice.
 	return name, name
 }
 
@@ -102,9 +87,7 @@ func SelectCourses(language int, coursesList []string, courses []types.Course) [
 		// In case the user does not want to download all the courses, show a list of checkboxes with the courses
 		// to allow the user to select them interactively
 		prompt := "Select the courses you want to download\n"
-		if language == 1 {
-			prompt = "Selecciona los cursos que quieres descargar\n"
-		}
+
 		listCoursesList := getCoursesNameByLanguage(courses)
 		coursesList = checkboxesCourses(prompt, listCoursesList)
 	}

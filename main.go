@@ -18,11 +18,7 @@ func main() {
 	arguments := prog_args.ParseFlags()
 
 	// Attribution of the program creator
-	if arguments.Language == 1 {
-		color.Cyan("Programa creado por Astrak00 para descargar archivos de Aula Global en la UC3M\n\n")
-	} else {
-		color.Cyan("Program created by Astrak00 to download files from Aula Global at UC3M\n\n")
-	}
+	color.Cyan("Program created by Astrak00 to download files from Aula Global at UC3M\n\n")
 
 	arguments = prog_args.ObtainingToken(arguments)
 
@@ -63,9 +59,6 @@ func main() {
 	}
 	download.DownloadFiles(filesStoreChan, arguments.MaxGoroutines, courses)
 
-	if arguments.Language == 1 {
-		color.Green("Descarga completada\n")
-	} else {
-		color.Green("Download completed\n")
-	}
+	color.Green("Download completed\n")
+
 }
