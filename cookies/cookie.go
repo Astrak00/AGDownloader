@@ -27,7 +27,7 @@ const (
 	hotPink          = lipgloss.Color("#FF06B7")
 	darkGray         = lipgloss.Color("#767676")
 	CookieText       = "\nYou must provide a cookie to obtain the token. To do this:\n1. Log into Aula Global\n2. Open the developer tools (F12)\n3. Go to the console tab, and run the following command:"
-	ObtainCookieText = "\n   console.log(document.cookie.split('; MoodleSessionag=').pop().split(';').shift())"
+	ObtainCookieText = "\n   console.log(('; ' + document.cookie).split('; MoodleSessionag=').pop().split(';').shift())"
 )
 
 var (
