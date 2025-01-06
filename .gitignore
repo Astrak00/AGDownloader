@@ -2,6 +2,7 @@
 bin
 courses_temp
 AGDownloader
+AGDownloader.exe
 dist
 .DS_Store
 .idea

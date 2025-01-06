@@ -11,10 +11,10 @@ import (
 
 func ParseFlags() types.Prog_args {
 	// Definition of the flags used in this program
-	languageStr := pflag.String("l", "EN", "Choose your language: ES: Español, EN:English")
+	languageStr := pflag.String("l", "ES", "Language of the course names: ES (Español) or EN (English)")
 	token := pflag.String("token", "", "Aula Global user security token 'aulaglobalmovil'")
 	dir := pflag.String("dir", "", "Directory where you want to save the files")
-	cores := pflag.Int("p", 0, "Cores to be used while downloading")
+	cores := pflag.Int("p", 0, "Number of cores to be used while downloading")
 	fast := pflag.Bool("fast", false, "Set MaxGoroutines to the number of files for fastest downloading")
 	var courses []string
 	pflag.StringSliceVar(&courses, "courses", []string{}, "Ids or names of the courses to be downloaded, enclosed in \", separated by spaces. \n\"all\" downloads all courses")
