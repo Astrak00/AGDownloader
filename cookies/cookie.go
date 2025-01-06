@@ -41,7 +41,7 @@ type model struct {
 	err     error
 }
 
-func GetTokenFromCookie(arguments types.Prog_args) string {
+func GetTokenFromCookie(arguments types.Prog_args) types.Prog_args {
 	p := tea.NewProgram(initialModel(&arguments.DirPath, arguments.MaxGoroutines))
 	model_out, err := p.Run()
 	if err != nil {
@@ -50,11 +50,22 @@ func GetTokenFromCookie(arguments types.Prog_args) string {
 	}
 
 	cookie := model_out.(model).inputs[authCookieIndex].Value()
+	dir := model_out.(model).inputs[dirIota].Value()
+	cores, err := strconv.Atoi(model_out.(model).inputs[corIota].Value())
+	if err != nil {
+		cores = runtime.NumCPU() / 2
+	}
 
 	// Convert from cookie to token
 	token := cookie_to_token(cookie)
 
-	return token
+	return types.Prog_args{
+		Language:      arguments.Language,
+		UserToken:     token,
+		DirPath:       dir,
+		MaxGoroutines: cores,
+		CoursesList:   arguments.CoursesList,
+	}
 
 }
 

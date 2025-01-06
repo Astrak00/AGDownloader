@@ -28,15 +28,13 @@ func ObtainingToken(arguments types.Prog_args) types.Prog_args {
 		if Knowledge_element("token") {
 			arguments = AskForToken(arguments)
 		} else {
-			// Ask for the cookie
-			if Knowledge_element("auth cookie") {
-				arguments.UserToken = cookie.GetTokenFromCookie(arguments)
-			} else {
+			// Ask for the cookie. If the user doesn't know what it is, show how to obtain the cookie
+			if !Knowledge_element("auth cookie") {
 				color.Yellow(cookie.CookieText)
 				color.Magenta(cookie.ObtainCookieText)
 				time.Sleep(2 * time.Second)
-				arguments.UserToken = cookie.GetTokenFromCookie(arguments)
 			}
+			arguments = cookie.GetTokenFromCookie(arguments)
 		}
 	} else {
 		if arguments.UserToken == "" || arguments.DirPath == "" || arguments.MaxGoroutines == 0 {
