@@ -88,7 +88,7 @@ func initialModel(dirStr *string, tokenStr *string, cores int) model {
 
 	// Directory input setup
 	inputs[dirIota] = textinput.New()
-	inputs[dirIota].Placeholder = "downloaded_files"
+	inputs[dirIota].Placeholder = "(current directory)"
 	inputs[dirIota].CharLimit = 40
 	inputs[dirIota].Width = 30
 	inputs[dirIota].Prompt = ""
