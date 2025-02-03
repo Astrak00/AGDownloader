@@ -47,7 +47,7 @@ func getCourseContent(token, courseID string) ([]types.File, error) {
 			continue
 		}
 
-		// get module name
+		// get section name
 		sectionName := course.Name
 
 		if sectionName == "General" {
@@ -56,15 +56,11 @@ func getCourseContent(token, courseID string) ([]types.File, error) {
 		}
 
 		if strings.HasPrefix(sectionName, "Topic ") || strings.HasPrefix(sectionName, "Tema ") { // TODO: use one or the other depending on the current language
-			// the module has a generic name, search the name in the summary
+			// the section has a generic name, search the name in the summary
 			sectionName = removeTags(course.Summary)
 		}
 
 		for _, module := range course.Modules {
-			if len(module.Contents) == 0 {
-				continue
-			}
-
 			for _, content := range module.Contents {
 
 				switch content.Type {
