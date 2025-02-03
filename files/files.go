@@ -42,20 +42,39 @@ func getCourseContent(token, courseID string) ([]types.File, error) {
 
 	// Get the names, urls and types of the files
 	filesPresentInCourse := make([]types.File, 0)
-	for i := 0; i < len(courseParsed); i++ {
-		if len(courseParsed[i].Modules) != 0 {
-			sectionName := removeTags(courseParsed[i].Summary)
+	for _, course := range courseParsed {
+		if len(course.Modules) == 0 {
+			continue
+		}
 
-			for j := 0; j < len(courseParsed[i].Modules); j++ {
-				if len(courseParsed[i].Modules[j].Contents) != 0 {
-					for k := 0; k < len(courseParsed[i].Modules[j].Contents); k++ {
-						if courseParsed[i].Modules[j].Contents[k].Type == "file" {
-							filesPresentInCourse = append(filesPresentInCourse, types.File{
-								FileName: filepath.Join(sectionName, courseParsed[i].Modules[j].Contents[k].Filename),
-								FileURL:  courseParsed[i].Modules[j].Contents[k].Fileurl,
-							})
-						}
-					}
+		// get module name
+		sectionName := course.Name
+
+		if sectionName == "General" {
+			// save it without section
+			sectionName = ""
+		}
+
+		if strings.HasPrefix(sectionName, "Topic ") || strings.HasPrefix(sectionName, "Tema ") { // TODO: use one or the other depending on the current language
+			// the module has a generic name, search the name in the summary
+			sectionName = removeTags(course.Summary)
+		}
+
+		for _, module := range course.Modules {
+			if len(module.Contents) == 0 {
+				continue
+			}
+
+			for _, content := range module.Contents {
+
+				switch content.Type {
+				case "file":
+					filesPresentInCourse = append(filesPresentInCourse, types.File{
+						FileName: filepath.Join(sectionName, content.Filename),
+						FileURL:  content.Fileurl,
+					})
+				default:
+					continue
 				}
 			}
 		}
@@ -66,6 +85,9 @@ func getCourseContent(token, courseID string) ([]types.File, error) {
 
 func removeTags(s string) string {
 	// Remove tags from a string using a more efficient approach
+
+	s = strings.ReplaceAll(s, "&nbsp;", " ") // remove &nsbp
+
 	var result []rune
 	inTag := false
 	for _, r := range s {
