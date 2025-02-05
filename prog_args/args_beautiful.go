@@ -75,7 +75,6 @@ func initialModel(dirStr *string, tokenStr *string, cores int) model {
 	inputs[tokenIota].CharLimit = 32
 	inputs[tokenIota].Width = 32
 	// If the token is already known, set it
-	fmt.Println("This is the token: ", *tokenStr)
 	if *tokenStr != "" {
 		inputs[tokenIota].SetValue(*tokenStr)
 	} else {
@@ -166,7 +165,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	return fmt.Sprintf(`Input the directory, token, and number of cores to use (-1 means all cores):
+	return fmt.Sprintf(`Input the save directory and number of cores to use (-1 means all cores):
 
  %s
  %s

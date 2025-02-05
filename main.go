@@ -8,6 +8,7 @@ import (
 	download "github.com/Astrak00/AGDownloader/download"
 	"github.com/Astrak00/AGDownloader/files"
 	prog_args "github.com/Astrak00/AGDownloader/prog_args"
+	token "github.com/Astrak00/AGDownloader/token"
 	types "github.com/Astrak00/AGDownloader/types"
 	u "github.com/Astrak00/AGDownloader/user"
 	"github.com/fatih/color"
@@ -20,9 +21,15 @@ func main() {
 	// Attribution of the program creator
 	color.Cyan("Program created by Astrak00 to download files from Aula Global at UC3M\n\n")
 
-	arguments = prog_args.ObtainingToken(arguments)
+	// get token
+	if arguments.UserToken == "" {
+		arguments.UserToken = token.ObtaininToken()
+	}
 
-	// Obtain the user information by loggin in with the token
+	// get full config
+	arguments = prog_args.GetConfig(arguments)
+
+	// Obtain the user information by logging in with the token
 	user, err := u.GetUserInfo(arguments.UserToken)
 	for err != nil {
 		user, err = u.GetUserInfo(arguments.UserToken)

@@ -1,4 +1,4 @@
-package prog_args
+package cookies
 
 import (
 	"encoding/base64"
@@ -12,7 +12,7 @@ import (
 
 const URLToken = "https://aulaglobal.uc3m.es/admin/tool/mobile/launch.php?service=moodle_mobile_app&passport=82.93261629596182&urlscheme=moodlemobile"
 
-func cookie_to_token(cookie string) string {
+func CookieToToken(cookie string) string {
 	// This function will convert the cookie to the token
 	_, err := getToken(cookie)
 	if err == nil {

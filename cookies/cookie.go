@@ -1,13 +1,10 @@
-package prog_args
+package cookies
 
 import (
 	"fmt"
 	"os"
 	"regexp"
-	"runtime"
-	"strconv"
 
-	"github.com/Astrak00/AGDownloader/types"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -19,15 +16,11 @@ type (
 
 const (
 	authCookieIndex = iota
-	dirIota
-	corIota
 )
 
 const (
-	hotPink          = lipgloss.Color("#FF06B7")
-	darkGray         = lipgloss.Color("#767676")
-	CookieText       = "\nYou must provide a cookie to obtain the token. To do this:\n1. Log into Aula Global\n2. Open the developer tools (F12)\n3. Go to the console tab, and run the following command:"
-	ObtainCookieText = "\n   console.log(('; ' + document.cookie).split('; MoodleSessionag=').pop().split(';').shift())"
+	hotPink  = lipgloss.Color("#FF06B7")
+	darkGray = lipgloss.Color("#767676")
 )
 
 var (
@@ -41,45 +34,20 @@ type model struct {
 	err     error
 }
 
-func GetTokenFromCookie(arguments types.Prog_args) types.Prog_args {
-	p := tea.NewProgram(initialModel(&arguments.DirPath, arguments.MaxGoroutines))
+func AskForCookie() string {
+	// Ask for the cookie, showing how to obtain it
+	p := tea.NewProgram(cookieModel())
 	model_out, err := p.Run()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error starting app: %v\n", err)
 		os.Exit(1)
 	}
 
-	cookie := model_out.(model).inputs[authCookieIndex].Value()
-	dir := model_out.(model).inputs[dirIota].Value()
-	cores, err := strconv.Atoi(model_out.(model).inputs[corIota].Value())
-	if err != nil {
-		cores = runtime.NumCPU() / 2
-	}
-
-	// Convert from cookie to token
-	token := cookie_to_token(cookie)
-
-	return types.Prog_args{
-		Language:      arguments.Language,
-		UserToken:     token,
-		DirPath:       dir,
-		MaxGoroutines: cores,
-		CoursesList:   arguments.CoursesList,
-	}
+	return model_out.(model).inputs[authCookieIndex].Value()
 
 }
 
-// Validator functions to ensure valid input
-func corValidator(s string) error {
-	// Number of cores should be an integer
-	_, err := strconv.ParseInt(s, 10, 64)
-	if err != nil {
-		return fmt.Errorf("cores must be an integer")
-	}
-	return nil
-}
-
-func tokenValidator(s string) error {
+func cookieValidator(s string) error {
 	// Token should be a string of 22 characters, that matches the regular expression
 	if s != "" && regexp.MustCompile(`[a-zA-Z0-9]{25,}`).MatchString(s) && len(s) > 25 {
 		return nil
@@ -87,49 +55,19 @@ func tokenValidator(s string) error {
 	return fmt.Errorf("cookie is invalid")
 }
 
-func dirValidator(s string) error {
-	// The directory should be a string of less than 40 characters
-	if len(s) > 40 {
-		return fmt.Errorf("directory is too long")
-	}
-
-	return nil
-}
-
-func initialModel(dirStr *string, cores int) model {
-	var inputs []textinput.Model = make([]textinput.Model, 3)
+func cookieModel() model {
+	var inputs []textinput.Model = make([]textinput.Model, 1)
 	focusSet := false
 	inputs[authCookieIndex] = textinput.New()
 	inputs[authCookieIndex].Placeholder = "AulaGlobal auth cookie"
 	inputs[authCookieIndex].CharLimit = 32
 	inputs[authCookieIndex].Width = 32
 	inputs[authCookieIndex].Prompt = ""
-	inputs[authCookieIndex].Validate = tokenValidator
+	inputs[authCookieIndex].Validate = cookieValidator
 	if !focusSet {
 		inputs[authCookieIndex].Focus()
 		focusSet = true
 	}
-
-	inputs[dirIota] = textinput.New()
-	inputs[dirIota].Placeholder = "(current directory)"
-	inputs[dirIota].CharLimit = 40
-	inputs[dirIota].Width = 30
-	inputs[dirIota].Prompt = ""
-	if *dirStr != "" {
-		inputs[dirIota].SetValue(*dirStr)
-	}
-	inputs[dirIota].Validate = dirValidator
-
-	inputs[corIota] = textinput.New()
-	if cores == 0 {
-		cores = runtime.NumCPU() / 2 // half of the total CPUs
-	}
-	inputs[corIota].SetValue(strconv.Itoa(cores))
-	inputs[corIota].Placeholder = "Number of cores to use"
-	inputs[corIota].CharLimit = 3
-	inputs[corIota].Width = 5
-	inputs[corIota].Prompt = ""
-	inputs[corIota].Validate = corValidator
 
 	return model{
 		inputs:  inputs,
@@ -180,23 +118,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
+	// TODO: use colors 'n stuff
 	return fmt.Sprintf(`
-Input the directory, cookie, and number of cores to use:
+Token file not found.
+
+You must provide a cookie to obtain the token. To do this:
+1. Log into Aula Global
+2. Open the developer tools (F12)
+3. Go to the console tab, and run the following command:
+
+   console.log(('; ' + document.cookie).split('; MoodleSessionag=').pop().split(';').shift())
 
  %s
  %s
-
- %s   %s
- %s   %s
 
  %s
 `,
 		inputStyle.Width(30).Render("Cookie"),
 		m.inputs[authCookieIndex].View(),
-		inputStyle.Width(30).Render("Directory"),
-		inputStyle.Width(5).Render("Cores"),
-		m.inputs[dirIota].View(),
-		m.inputs[corIota].View(),
 		continueStyle.Render("Continue (enter)->"),
 	) + "\n"
 }

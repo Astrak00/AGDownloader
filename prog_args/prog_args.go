@@ -42,8 +42,8 @@ func ParseFlags() types.Prog_args {
 	}
 }
 
-// Knowledge_token Ask the user if they know their token
-func AskForToken(arguments types.Prog_args) types.Prog_args {
+// get the program config
+func GetConfig(arguments types.Prog_args) types.Prog_args {
 
 	p := tea.NewProgram(initialModel(&arguments.DirPath, &arguments.UserToken, arguments.MaxGoroutines))
 
