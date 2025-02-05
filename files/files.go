@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -65,6 +66,10 @@ func getCourseContent(token, courseID string) ([]types.File, error) {
 
 				switch content.Type {
 				case "file":
+					if runtime.GOOS == "windows" {
+						// Windows shits itself if the sectionName has trailing whitespace or `:`, don't ask me why (see #13)
+						sectionName = strings.Replace(strings.TrimSpace(sectionName), ":", "", -1)
+					}
 					filesPresentInCourse = append(filesPresentInCourse, types.File{
 						FileName: filepath.Join(sectionName, content.Filename),
 						FileURL:  content.Fileurl,
