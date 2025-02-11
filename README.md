@@ -6,7 +6,7 @@ You can also indicate the course ID or names of the courses you want to download
 
 
 ## Demo
-![Demo](assets/demo.mp4)
+![Demo](assets/demo.gif)
 
 
 
