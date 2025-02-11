@@ -29,7 +29,21 @@ In order for the application to retrieve the data from AulaGlobal, you must log 
 Currently, you can't obtain the token through the website. Fortunately, there are other ways, like obtaining it through the session cookie, or inspecting the requests made by the mobile application.
 
 The easiest way is through the cookie. The program will guide you through the process, and save the token in the `token-file` file.
-<!-- TODO: GIF for obtaining the cookie -->
+
+<details>
+  <summary>Obtaining the cookie 🍪</summary>
+
+1. Log into [Aula Global](https://aulaglobal.uc3m.es) through your browser.
+2. Open the browser's developer tools (F12)
+3. Go to the console tab, and run the following command:
+    ```js
+    console.log(('; ' + document.cookie).split('; MoodleSessionag=').pop().split(';').shift())
+    ```
+
+![Obtaining the cookie](assets/cookie.gif)
+
+</details>
+
 
 <details>
   <summary>Deprecated way of obtaining the token</summary>
