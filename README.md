@@ -28,7 +28,7 @@ In order for the application to retrieve the data from AulaGlobal, you must log 
 
 Currently, you can't obtain the token through the website. Fortunately, there are other ways, like obtaining it through the session cookie, or inspecting the requests made by the mobile application.
 
-The easiest way is through the cookie. The program will guide you through the process, and save the token in the `token-file` file.
+The easiest way is through the cookie. The program will guide you through the process, and save the token in the `aulaglobal-token` file.
 
 <details>
   <summary>Obtaining the cookie 🍪</summary>
@@ -116,7 +116,7 @@ You can also specify the `--fast` flag that sets the number of processes to the 
 
 
 #### The application stopped working and it shows an error when trying to obtain the user's credentials
-Your token may be expired. Delete the `token-file` file and generate a new one.
+Your token may be expired. Delete the `aulaglobal-token` file and generate a new one.
 
 
 
