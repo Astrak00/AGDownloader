@@ -3,11 +3,22 @@ package prog_args
 import (
 	"log"
 	"strconv"
+	"fmt"
+	"regexp"
 
 	types "github.com/Astrak00/AGDownloader/types"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/pflag"
 )
+
+
+func tokenValidator(s string) error {
+	// Token should be a string of 22 characters, that matches the regular expression
+	if s != "" && regexp.MustCompile(`[a-zA-Z0-9]{20,}`).MatchString(s) && len(s) > 20 {
+		return nil
+	}
+	return fmt.Errorf("token is invalid")
+}
 
 func ParseFlags() types.Prog_args {
 	// Definition of the flags used in this program
@@ -29,6 +40,13 @@ func ParseFlags() types.Prog_args {
 		language = 2
 	}
 
+	// validate token
+	if *token != "" {
+		if err := tokenValidator(*token); err != nil {
+			log.Fatalf("Error getting courses: %v\n", err)
+		}
+	}
+
 	if *fast {
 		*cores = -1
 	}
@@ -45,14 +63,13 @@ func ParseFlags() types.Prog_args {
 // get the program config
 func GetConfig(arguments types.Prog_args) types.Prog_args {
 
-	p := tea.NewProgram(initialModel(&arguments.DirPath, &arguments.UserToken, arguments.MaxGoroutines))
+	p := tea.NewProgram(initialModel(&arguments.DirPath, arguments.MaxGoroutines))
 
 	finalModel, err := p.Run()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	tokenObtained := finalModel.(model).inputs[tokenIota].Value()
 	dirObtained := finalModel.(model).inputs[dirIota].Value()
 	if dirObtained == "" {
 		dirObtained = "."
@@ -64,7 +81,7 @@ func GetConfig(arguments types.Prog_args) types.Prog_args {
 
 	return types.Prog_args{
 		Language:      arguments.Language,
-		UserToken:     tokenObtained,
+		UserToken:     arguments.UserToken,
 		DirPath:       dirObtained,
 		MaxGoroutines: coresObtained,
 		CoursesList:   arguments.CoursesList,

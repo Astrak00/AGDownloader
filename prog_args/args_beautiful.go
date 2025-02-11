@@ -2,7 +2,6 @@ package prog_args
 
 import (
 	"fmt"
-	"regexp"
 	"runtime"
 	"strconv"
 
@@ -16,8 +15,7 @@ type (
 )
 
 const (
-	tokenIota = iota
-	dirIota
+	dirIota = iota
 	corIota
 )
 
@@ -47,13 +45,6 @@ func corValidator(s string) error {
 	return nil
 }
 
-func tokenValidator(s string) error {
-	// Token should be a string of 22 characters, that matches the regular expression
-	if s != "" && regexp.MustCompile(`[a-zA-Z0-9]{20,}`).MatchString(s) && len(s) > 20 {
-		return nil
-	}
-	return fmt.Errorf("token is invalid")
-}
 
 func dirValidator(s string) error {
 	// The directory should be a string of less than 40 characters
@@ -64,26 +55,10 @@ func dirValidator(s string) error {
 	return nil
 }
 
-func initialModel(dirStr *string, tokenStr *string, cores int) model {
-	var inputs []textinput.Model = make([]textinput.Model, 3)
+func initialModel(dirStr *string, cores int) model {
+	var inputs []textinput.Model = make([]textinput.Model, 2)
 	focusAlreadySet := false
 	focusedResult := 0
-
-	// Token input setup
-	inputs[tokenIota] = textinput.New()
-	inputs[tokenIota].Placeholder = "Token from AulaGlobal website"
-	inputs[tokenIota].CharLimit = 32
-	inputs[tokenIota].Width = 32
-	// If the token is already known, set it
-	if *tokenStr != "" {
-		inputs[tokenIota].SetValue(*tokenStr)
-	} else {
-		inputs[tokenIota].Prompt = ""
-		inputs[tokenIota].Focus()
-		focusAlreadySet = true
-		focusedResult = 0
-	}
-	inputs[tokenIota].Validate = tokenValidator
 
 	// Directory input setup
 	inputs[dirIota] = textinput.New()
@@ -167,16 +142,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	return fmt.Sprintf(`Input the save directory and number of cores to use (-1 means all cores):
 
- %s
- %s
-
  %s   %s
  %s   %s
 
  %s
 `,
-		inputStyle.Width(30).Render("Token"),
-		m.inputs[tokenIota].View(),
 		inputStyle.Width(30).Render("Directory"),
 		inputStyle.Width(5).Render("Cores"),
 		m.inputs[dirIota].View(),
