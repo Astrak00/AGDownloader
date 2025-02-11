@@ -5,6 +5,10 @@ AGDownloader is a simple and easy-to-use downloader for [AulaGlobal](https://aul
 You can also indicate the course ID or names of the courses you want to download, and the program will only download the files from those courses.
 
 
+## Demo
+![Demo](assets/demo.mp4)
+
+
 
 ## Usage
 To download the program, go to the [releases page](https://github.com/Astrak00/AGDownloader/releases/latest) and download the latest version for your operating system. You can also [build](#build-from-source) the program from source by following the instructions below. 
