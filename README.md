@@ -111,6 +111,15 @@ You can specify the number of cores you want to use while downloading the files 
 You can also specify the `--fast` flag that sets the number of processes to the total number of files you will be downloading. This is the fastest way of downloading but may consume more resources.
 
 
+### F.A.Q.
+- [The application stopped working and it shows an error when trying to obtain the user's credentials](#the-application-stopped-working-and-it-shows-an-error-when-trying-to-obtain-the-user's-credentials)
+
+
+#### The application stopped working and it shows an error when trying to obtain the user's credentials
+Your token may be expired. Delete the `token-file` file and generate a new one.
+
+
+
 
 ## Building from source
 
