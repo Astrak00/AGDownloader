@@ -45,7 +45,6 @@ func corValidator(s string) error {
 	return nil
 }
 
-
 func dirValidator(s string) error {
 	// The directory should be a string of less than 40 characters
 	if len(s) > 40 {
@@ -68,10 +67,10 @@ func initialModel(dirStr *string, cores int) model {
 	inputs[dirIota].Prompt = ""
 	if *dirStr != "" {
 		inputs[dirIota].SetValue(*dirStr)
-	} else if !focusAlreadySet {
+	} else {
 		inputs[dirIota].Focus()
 		focusAlreadySet = true
-		focusedResult = 1
+		focusedResult = 0
 	}
 	inputs[dirIota].Validate = dirValidator
 
@@ -82,7 +81,7 @@ func initialModel(dirStr *string, cores int) model {
 	}
 	if !focusAlreadySet {
 		inputs[corIota].Focus()
-		focusedResult = 2
+		focusedResult = 1
 	}
 	inputs[corIota].SetValue(strconv.Itoa(cores))
 	inputs[corIota].Placeholder = "Number of cores to use"

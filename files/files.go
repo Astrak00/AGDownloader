@@ -3,13 +3,12 @@ package files
 import (
 	"encoding/json"
 	"fmt"
+	types "github.com/Astrak00/AGDownloader/types"
 	"log"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
-
-	types "github.com/Astrak00/AGDownloader/types"
 )
 
 // Parses the course for available files and sends them to the channel to be downloaded

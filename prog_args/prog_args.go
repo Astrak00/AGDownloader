@@ -1,16 +1,15 @@
 package prog_args
 
 import (
-	"log"
-	"strconv"
 	"fmt"
+	"log"
 	"regexp"
+	"strconv"
 
 	types "github.com/Astrak00/AGDownloader/types"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/pflag"
 )
-
 
 func tokenValidator(s string) error {
 	// Token should be a string of 22 characters, that matches the regular expression

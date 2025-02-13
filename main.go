@@ -45,7 +45,7 @@ func main() {
 	coursesList := c.SelectCourses(arguments.Language, arguments.CoursesList, courses)
 
 	// Create a channel to store the files and another for the errors that may occur when listing all the resources to download
-	filesStoreChan := make(chan types.FileStore, len(courses)*20)
+	filesStoreChan := make(chan types.FileStore, len(courses)*100)
 	errChan := make(chan error, len(courses))
 
 	// Creating a chanel to store the files that will be downloaded
