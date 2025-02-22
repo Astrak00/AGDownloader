@@ -9,7 +9,10 @@ import (
 	"github.com/Astrak00/AGDownloader/types"
 )
 
-func ObtaininToken() string {
+// ObtainToken gets the token from the saved file from a previous execution or asks the user for it
+// and saves it to a file.
+// Returns the token.
+func ObtainToken() string {
 
 	// Check if the token is stored in a local file to prevent unecessary request
 	if _, err := os.Stat(types.TokenDir); err == nil {
@@ -30,12 +33,11 @@ func ObtaininToken() string {
 	return token
 }
 
+// saveToken saves the token to a file names types.TokenDir (aulaglobal-token)
 func saveToken(token string) {
 	if token == "" {
 		return
 	}
-
-	// TODO: prompt user for save path, etc.
 
 	// We save the token to a file to be able to read it in future executions
 	err := os.WriteFile(types.TokenDir, []byte(token), 0644)

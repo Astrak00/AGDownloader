@@ -3,13 +3,30 @@ package files
 import (
 	"encoding/json"
 	"fmt"
-	types "github.com/Astrak00/AGDownloader/types"
 	"log"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
+
+	types "github.com/Astrak00/AGDownloader/types"
 )
+
+// ListAllResources Creates a list of all the resources to download
+func ListAllResources(courses []types.Course, userToken string, dirPath string, errChan chan error, filesStoreChan chan types.FileStore) {
+	var wg sync.WaitGroup
+	for _, courseItem := range courses {
+		wg.Add(1)
+		go func(courseItem types.Course) {
+			defer wg.Done()
+			// Passing chan <- types.FileStore(filesStoreChan) as a parameter to the function makes the chanel
+			// to be a parameter of the function, so it can be used inside the function and a send-only channel
+			processCourse(courseItem, userToken, dirPath, chan<- error(errChan), chan<- types.FileStore(filesStoreChan))
+		}(courseItem)
+	}
+
+	wg.Wait()
+}
 
 // Parses the course for available files and sends them to the channel to be downloaded
 func processCourse(course types.Course, userToken string, dirPath string, errChan chan<- error, filesStoreChan chan<- types.FileStore) {
@@ -116,20 +133,4 @@ func catalogFiles(courseName string, token string, files []types.File, dirPath s
 		// Send the file to the channel
 		filesStoreChan <- types.FileStore{FileName: file.FileName, FileURL: url, Dir: filePath}
 	}
-}
-
-// ListAllResourcess Creates a list of all the resources to download
-func ListAllResourcess(courses []types.Course, userToken string, dirPath string, errChan chan error, filesStoreChan chan types.FileStore) {
-	var wg sync.WaitGroup
-	for _, courseItem := range courses {
-		wg.Add(1)
-		go func(courseItem types.Course) {
-			defer wg.Done()
-			// Passing chan <- types.FileStore(filesStoreChan) as a parameter to the function makes the chanel
-			// to be a parameter of the function, so it can be used inside the function and a send-only channel
-			processCourse(courseItem, userToken, dirPath, chan<- error(errChan), chan<- types.FileStore(filesStoreChan))
-		}(courseItem)
-	}
-
-	wg.Wait()
 }

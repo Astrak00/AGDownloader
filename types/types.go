@@ -7,12 +7,20 @@ const (
 	TokenDir   = "aulaglobal-token"
 )
 
-type Prog_args struct {
+type ProgramArgs struct {
 	Language      int
 	UserToken     string
 	DirPath       string
 	MaxGoroutines int
 	CoursesList   []string
+}
+
+// CHeck if all the arguments are assigned
+func (p ProgramArgs) CheckAllAsigned() bool {
+	if p.Language == 0 || p.UserToken == "" || p.DirPath == "" || p.MaxGoroutines == 0 {
+		return false
+	}
+	return true
 }
 
 type File struct {
@@ -23,6 +31,18 @@ type File struct {
 type Course struct {
 	Name string
 	ID   string
+}
+
+// Define a named type for a slice of Course
+type Courses []Course
+
+// Map the courses to obtain a []string with the names of the courses
+func (c Courses) GetCoursesName() []string {
+	coursesNames := make([]string, len(c))
+	for i, course := range c {
+		coursesNames[i] = course.Name
+	}
+	return coursesNames
 }
 
 type FileStore struct {

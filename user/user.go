@@ -14,6 +14,7 @@ import (
 
 /*
 Gets the userID necessary to get the courses
+TODO: Change this to a json response
 */
 func GetUserInfo(token string) (types.UserInfo, error) {
 	url := fmt.Sprintf("https://%s%s?wstoken=%s&wsfunction=core_webservice_get_site_info", types.Domain, types.Webservice, token)
@@ -52,6 +53,5 @@ func GetUserInfo(token string) (types.UserInfo, error) {
 		color.Red("UserID not found\n")
 	}
 
-	//color.Blue("Your User ID: %s, %s\n", userInfo.UserID, userInfo.FullName)
 	return userInfo, nil
 }

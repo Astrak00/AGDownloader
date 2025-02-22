@@ -109,6 +109,9 @@ func repeat(char rune, count int) []rune {
 // DownloadFiles orchestrates the file downloads and displays progress using Bubble Tea.
 func DownloadFiles(filesStoreChan <-chan types.FileStore, maxGoroutines int, courses []types.Course) {
 	totalFiles := len(filesStoreChan)
+	if maxGoroutines == -1 {
+		maxGoroutines = totalFiles
+	}
 
 	// Convert the courses to a map for easy lookup
 	courseIDMap := make(map[string]string)

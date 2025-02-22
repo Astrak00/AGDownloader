@@ -15,41 +15,44 @@ import (
 )
 
 func main() {
-	// Parse the flags to get the language, userToken, dirPath, maxGoroutines and coursesList
-	arguments := prog_args.ParseFlags()
+	// Parse the flags to get the language, user token, the path to save the downloaded files, maxGoroutines and courses list to download
+	arguments := prog_args.ParseCLIArgs()
 
 	// Attribution of the program creator
-	color.Cyan("Program created by Astrak00 to download files from Aula Global at UC3M\n\n")
+	color.Cyan("Program created by Astrak00 to download files from Aula Global at UC3M\n")
 
-	// get token
+	// In case the user has not provided a token though the cli, we try to obtain it from a file or ask the user for it
 	if arguments.UserToken == "" {
-		arguments.UserToken = token.ObtaininToken()
+		arguments.UserToken = token.ObtainToken()
 	}
 
-	// get full config
-	arguments = prog_args.GetConfig(arguments)
+	// If there are missing arguments, we prompt the user for them
+	if !arguments.CheckAllAsigned() {
+		arguments = prog_args.PromptMissingArgs(arguments)
+	}
 
 	// Obtain the user information by logging in with the token
 	user, err := u.GetUserInfo(arguments.UserToken)
 	for err != nil {
 		user, err = u.GetUserInfo(arguments.UserToken)
+		log.Default().Printf("Error getting user info: %v\nTrying again", err)
 	}
 
-	// Obtain the courses of the user
+	// Obtain the courses the user is enrolled in
 	courses, err := c.GetCourses(arguments.UserToken, user.UserID, arguments.Language)
 	if err != nil {
 		log.Fatalf("Error getting courses: %v\n", err)
 	}
 
 	// Create an interactive list so the user can select the courses to download
-	coursesList := c.SelectCourses(arguments.Language, arguments.CoursesList, courses)
+	coursesList := c.SelectCoursesInteractive(arguments.Language, arguments.CoursesList, courses)
 
 	// Create a channel to store the files and another for the errors that may occur when listing all the resources to download
 	filesStoreChan := make(chan types.FileStore, len(courses)*100)
 	errChan := make(chan error, len(courses))
 
-	// Creating a chanel to store the files that will be downloaded
-	files.ListAllResourcess(coursesList, arguments.UserToken, arguments.DirPath, errChan, filesStoreChan)
+	// List all the resources to downloaded and send them to the channel
+	files.ListAllResources(coursesList, arguments.UserToken, arguments.DirPath, errChan, filesStoreChan)
 
 	close(errChan)
 	close(filesStoreChan)
@@ -61,9 +64,6 @@ func main() {
 	}
 
 	// Download all the files in the channel
-	if arguments.MaxGoroutines == -1 {
-		arguments.MaxGoroutines = len(filesStoreChan)
-	}
 	download.DownloadFiles(filesStoreChan, arguments.MaxGoroutines, courses)
 
 }

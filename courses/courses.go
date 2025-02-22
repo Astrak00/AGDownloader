@@ -13,9 +13,10 @@ import (
 	types "github.com/Astrak00/AGDownloader/types"
 )
 
-// GetCourses Gets the courses, the localized name and ID, given a userID
-func GetCourses(token string, userID string, language int) ([]types.Course, error) {
-	color.Yellow("Fetching courses from AulaGlobal...\n")
+// GetCourses obtains the courses, the localized name and ID, given a userID
+// Returns a slice of courses
+func GetCourses(token string, userID string, language int) (types.Courses, error) {
+	fmt.Println("Fetching courses from AulaGlobal...")
 
 	url := fmt.Sprintf("https://%s%s?wstoken=%s&wsfunction=core_enrol_get_users_courses&userid=%s&moodlewsrestformat=json", types.Domain, types.Webservice, token, userID)
 
@@ -30,17 +31,12 @@ func GetCourses(token string, userID string, language int) ([]types.Course, erro
 
 	// Get the names and IDs of the courses
 	courses := make([]types.Course, 0, len(userParsed))
-	name_def := ""
+	var course_name string = ""
 	for _, course := range userParsed {
 		// Localize the course name
-		nameEs, nameEN := getCoursesNamesLanguages(course.Fullname)
-		if language == 1 {
-			name_def = nameEs
-		} else {
-			name_def = nameEN
-		}
-		if name_def != "Secretaría EPS" && !containsInvalidNames(name_def) {
-			courses = append(courses, types.Course{Name: name_def, ID: strconv.Itoa(course.ID)})
+		course_name = extractCourseNameByLanguage(course.Fullname, language)
+		if !containsInvalidNames(course_name) {
+			courses = append(courses, types.Course{Name: course_name, ID: strconv.Itoa(course.ID)})
 		}
 	}
 
@@ -48,6 +44,7 @@ func GetCourses(token string, userID string, language int) ([]types.Course, erro
 	return courses, nil
 }
 
+// Check if the name of the course contains invalid names that should not be downloaded
 func containsInvalidNames(name string) bool {
 	invalidCourseNames := []string{"Convenio", "Delegación", "Secretaría", "Student Room", "Sala de Estudiantes", "Bachelor"}
 
@@ -63,14 +60,18 @@ func containsInvalidNames(name string) bool {
 // Get the names of the courses in Spanish and English
 // This function localizes the names of the courses in Spanish and English
 // Separating the names by -1C, -2C, -1S, -2S, Bachelor, Student, Convenio-Bilateral
-func getCoursesNamesLanguages(name string) (string, string) {
+func extractCourseNameByLanguage(name string, lang int) string {
 	// Define the first group of separators with priority.
 	firstGroup := []string{"-1C", "-2C", "-1S", "-2S"}
 
 	// Iterate over the first group to find the earliest separator.
 	for _, sep := range firstGroup {
 		if idx := strings.Index(name, sep); idx > 0 { // idx > 0 ensures the separator is not at the start
-			return name[:idx+len(sep)], name[idx+len(sep):]
+			if lang == 1 {
+				return name[:idx+len(sep)]
+			} else {
+				return name[idx+len(sep):]
+			}
 		}
 	}
 
@@ -80,46 +81,46 @@ func getCoursesNamesLanguages(name string) (string, string) {
 	// Iterate over the second group to find the earliest separator.
 	for _, sep := range secondGroup {
 		if idx := strings.Index(name, sep); idx != -1 { // idx != -1 means the separator exists
-			return name[:idx], name[idx:]
+			if lang == 1 {
+				return name[:idx]
+			} else {
+				return name[idx:]
+			}
 		}
 	}
 
 	// If no separators are found, return the original name twice.
-	return name, name
+	return name
 }
 
 // SelectCourses prompts the user to select the courses to download
-func SelectCourses(language int, coursesList []string, courses []types.Course) []types.Course {
+func SelectCoursesInteractive(language int, selectedCourses []string, courses types.Courses) []types.Course {
 	// Cehck if the user wants to download all the courses and return the courses
-	if len(coursesList) != 0 && coursesList[0] == "all" {
+	if len(selectedCourses) != 0 && selectedCourses[0] == "all" {
 		return courses
-	} else if len(coursesList) == 0 {
+	} else if len(selectedCourses) == 0 {
 		// In case the user does not want to download all the courses, show a list of checkboxes with the courses
 		// to allow the user to select them interactively
 		prompt := "Select the courses you want to download\n"
 
-		listCoursesList := getCoursesNameByLanguage(courses)
-		coursesList = checkboxesCourses(prompt, listCoursesList)
+		coursesName := courses.GetCoursesName()
+		selectedCourses = checkboxesCourses(prompt, coursesName)
 	}
 
-	coursesToDownload := make([]types.Course, 0, len(coursesList))
-	for _, course := range coursesList {
-		for _, c := range courses {
-			if course == c.Name {
-				coursesToDownload = append(coursesToDownload, c)
-			}
+	coursesToDownload := make([]types.Course, 0, len(selectedCourses))
+	// Create a map for O(1) lookups
+	courseMap := make(map[string]types.Course)
+	for _, c := range courses {
+		courseMap[c.Name] = c
+	}
+
+	// Single loop through selected courses
+	for _, courseName := range selectedCourses {
+		if course, exists := courseMap[courseName]; exists {
+			coursesToDownload = append(coursesToDownload, course)
 		}
 	}
 	return coursesToDownload
-}
-
-// Map the courses to obtain a []string with the names of the courses
-func getCoursesNameByLanguage(courses []types.Course) []string {
-	coursesList := make([]string, len(courses))
-	for i, course := range courses {
-		coursesList[i] = course.Name
-	}
-	return coursesList
 }
 
 // Show in the terminal a list of checkboxes with the courses to download

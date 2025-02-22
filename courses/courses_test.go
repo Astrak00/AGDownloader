@@ -21,12 +21,15 @@ func TestGetCoursesNamesLanguages(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.fullName, func(t *testing.T) {
-			ans1, ans2 := getCoursesNamesLanguages(tt.fullName)
-			if ans1 != tt.nameEs {
-				t.Errorf("got %s, want %s", ans1, tt.nameEs)
+			var ans [2]string
+			for i := 0; i < 2; i++ {
+				ans[i] = extractCourseNameByLanguage(tt.fullName, i+1)
 			}
-			if ans2 != tt.nameEN {
-				t.Errorf("got %s, want %s", ans2, tt.nameEN)
+			if ans[0] != tt.nameEs {
+				t.Errorf("got %s, want %s", ans[0], tt.nameEs)
+			}
+			if ans[1] != tt.nameEN {
+				t.Errorf("got %s, want %s", ans[1], tt.nameEN)
 			}
 		})
 	}
