@@ -124,7 +124,7 @@ Token file not found.
 
 You must provide a cookie to obtain the token. To do this:
 1. Log into Aula Global through your browser
-2. Open the browser's developer tools (F12)
+2. Open the browser's developer tools (F12) or right-click and select "Inspect"
 3. Go to the console tab, and run the following command:
 
    console.log(('; ' + document.cookie).split('; MoodleSessionag=').pop().split(';').shift())

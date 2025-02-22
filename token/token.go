@@ -4,9 +4,13 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
 
 	"github.com/Astrak00/AGDownloader/cookies"
 	"github.com/Astrak00/AGDownloader/types"
+
+	"github.com/browserutils/kooky"
+	_ "github.com/browserutils/kooky/browser/all"
 )
 
 // ObtainToken gets the token from the saved file from a previous execution or asks the user for it
@@ -24,9 +28,28 @@ func ObtainToken() string {
 		return string(data)
 	}
 
+	fmt.Println("Please, open your browser and log in to Aula Global at UC3M")
+	fmt.Println("Then, press enter to continue. If you have already logged in, press enter to continue")
+	fmt.Scanln()
+
+	if runtime.GOOS == "darwin" {
+		fmt.Println("You will now be asked to enter your password to access the cookies. We need this to decrypt the cookie.")
+	}
+
+	// use kooky to get the token from the browser cookies
+	var cookieResult string
+	browserCookies := kooky.ReadCookies(kooky.DomainHasSuffix(`uc3m.es`), kooky.Name(`MoodleSessionag`))
+	for _, cookie := range browserCookies {
+		if len(cookie.Value) >= 26 {
+			cookieResult = cookie.Value[len(cookie.Value)-26:]
+		}
+	}
+
 	// get token from cookie
-	cookie := cookies.AskForCookie()
-	token := cookies.CookieToToken(cookie)
+	if cookieResult == "" {
+		cookieResult = cookies.AskForCookie()
+	}
+	token := cookies.CookieToToken(cookieResult)
 
 	saveToken(token)
 
