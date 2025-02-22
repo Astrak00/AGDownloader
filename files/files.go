@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -133,4 +134,26 @@ func catalogFiles(courseName string, token string, files []types.File, dirPath s
 		// Send the file to the channel
 		filesStoreChan <- types.FileStore{FileName: file.FileName, FileURL: url, Dir: filePath}
 	}
+}
+
+func GetFullPath(dirPath string) string {
+	if runtime.GOOS == "darwin" {
+		cwd, _ := os.Getwd()
+		if os.Getenv("HOME") == cwd {
+			execPath, err := os.Executable()
+			if err != nil {
+				log.Fatalf("Error getting executable path: %v\n", err)
+			}
+			return filepath.Join(filepath.Dir(execPath), dirPath)
+		}
+	}
+
+	if !filepath.IsAbs(dirPath) {
+		absPath, err := filepath.Abs(dirPath)
+		if err != nil {
+			log.Fatalf("Error getting full path: %v\n", err)
+		}
+		return absPath
+	}
+	return dirPath
 }

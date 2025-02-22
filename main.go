@@ -15,6 +15,7 @@ import (
 )
 
 func main() {
+
 	// Parse the flags to get the language, user token, the path to save the downloaded files, maxGoroutines and courses list to download
 	arguments := prog_args.ParseCLIArgs()
 
@@ -30,6 +31,11 @@ func main() {
 	if !arguments.CheckAllAsigned() {
 		arguments = prog_args.PromptMissingArgs(arguments)
 	}
+
+	// use a full path instead of relative paths for the directory
+	arguments.DirPath = files.GetFullPath(arguments.DirPath)
+
+	fmt.Println("Downloading files to:", arguments.DirPath)
 
 	// Obtain the user information by logging in with the token
 	user, err := u.GetUserInfo(arguments.UserToken)
