@@ -120,9 +120,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	// TODO: use colors 'n stuff
 	return fmt.Sprintf(`
-Token file not found.
+The cookie could not be found in the browser.
 
-You must provide a cookie to obtain the token. To do this:
+You must provide a cookie to obtain the token manually. To do this:
 1. Log into Aula Global through your browser
 2. Open the browser's developer tools (F12) or right-click and select "Inspect"
 3. Go to the console tab, and run the following command:

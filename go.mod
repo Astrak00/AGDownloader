@@ -18,6 +18,7 @@ require (
 	github.com/Velocidex/yaml/v2 v2.2.8 // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
+	github.com/briandowns/spinner v1.23.2 // indirect
 	github.com/charmbracelet/x/ansi v0.4.5 // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect

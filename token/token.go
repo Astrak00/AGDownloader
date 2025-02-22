@@ -5,9 +5,11 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"time"
 
 	"github.com/Astrak00/AGDownloader/cookies"
 	"github.com/Astrak00/AGDownloader/types"
+	"github.com/briandowns/spinner"
 
 	"github.com/browserutils/kooky"
 	_ "github.com/browserutils/kooky/browser/all"
@@ -29,31 +31,55 @@ func ObtainToken() string {
 	}
 
 	fmt.Println("Please, open your browser and log in to Aula Global at UC3M")
-	fmt.Println("Then, press enter to continue. If you have already logged in, press enter to continue")
+	fmt.Println("Then, press enter to continue. If you have already logged in wait 5 seconds and then, press enter to continue")
 	fmt.Scanln()
 
 	if runtime.GOOS == "darwin" {
-		fmt.Println("You will now be asked to enter your password to access the cookies. We need this to decrypt the cookie.")
+		fmt.Print("You will now be asked to enter your password to the keychain to access the cookies. We need this to decrypt the cookie.")
+	}
+	cookieResult := getCookieBrowser()
+	fmt.Printf("\r")
+	s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
+	s.Suffix = " Obtaining token..."
+	s.Start()
+	tries := 0
+	var token string
+	var err error
+	for {
+		token, err = cookies.CookieToToken(cookieResult)
+		if err == nil {
+			break
+		}
+		if tries >= 10 {
+			cookieResult = ""
+			break
+		}
+		cookieResult = getCookieBrowser()
+		tries++
+	}
+	s.Stop()
+
+	// get token from cookie
+	if cookieResult == "" {
+		cookieResult = cookies.AskForCookie()
+		token, _ = cookies.CookieToToken(cookieResult)
 	}
 
-	// use kooky to get the token from the browser cookies
+	saveToken(token)
+
+	return token
+}
+
+func getCookieBrowser() string {
 	var cookieResult string
 	browserCookies := kooky.ReadCookies(kooky.DomainHasSuffix(`uc3m.es`), kooky.Name(`MoodleSessionag`))
+	// fmt.Println(browserCookies)
 	for _, cookie := range browserCookies {
 		if len(cookie.Value) >= 26 {
 			cookieResult = cookie.Value[len(cookie.Value)-26:]
 		}
 	}
-
-	// get token from cookie
-	if cookieResult == "" {
-		cookieResult = cookies.AskForCookie()
-	}
-	token := cookies.CookieToToken(cookieResult)
-
-	saveToken(token)
-
-	return token
+	return cookieResult
 }
 
 // saveToken saves the token to a file names types.TokenDir (aulaglobal-token)

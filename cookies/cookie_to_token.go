@@ -12,18 +12,17 @@ import (
 
 const URLToken = "https://aulaglobal.uc3m.es/admin/tool/mobile/launch.php?service=moodle_mobile_app&passport=82.93261629596182&urlscheme=moodlemobile"
 
-func CookieToToken(cookie string) string {
+func CookieToToken(cookie string) (string, error) {
 	// This function will convert the cookie to the token
 	_, err := getToken(cookie)
 	if err == nil {
-		fmt.Println("Error:", err)
-		return ""
+		return "", err
 	}
 	token, shouldNotReturn := extractTokenFromError(err)
 	if shouldNotReturn {
-		return ""
+		return "", errors.New("failed to extract token from error")
 	}
-	return token
+	return token, nil
 }
 
 func getToken(cookie string) (string, error) {
@@ -91,7 +90,6 @@ func extractTokenFromError(err error) (string, bool) {
 	matches := pattern.FindStringSubmatch(err.Error())
 
 	if matches == nil {
-		fmt.Println("Regex not found in the error")
 		return "", true
 	}
 
