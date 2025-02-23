@@ -29,35 +29,35 @@ func ObtainToken() string {
 		//fmt.Println("Token token loaded from", types.TokenDir)
 		return string(data)
 	}
-
-	fmt.Println("Please, open your browser and log in to Aula Global at UC3M")
-	fmt.Println("Then, press enter to continue. If you have already logged in wait 5 seconds and then, press enter to continue")
-	fmt.Scanln()
+	var token, cookieResult string = "", ""
 
 	if runtime.GOOS == "darwin" {
+		fmt.Println("Please, open your browser and log in to Aula Global at UC3M.")
+		fmt.Println("Then, press enter to continue. If you have already logged in wait 5 seconds and then, press enter to continue")
+		fmt.Scanln()
 		fmt.Print("You will now be asked to enter your password to the keychain to access the cookies. We need this to decrypt the cookie.")
-	}
-	cookieResult := getCookieBrowser()
-	fmt.Printf("\r")
-	s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
-	s.Suffix = " Obtaining token..."
-	s.Start()
-	tries := 0
-	var token string
-	var err error
-	for {
-		token, err = cookies.CookieToToken(cookieResult)
-		if err == nil {
-			break
+		
+		cookieResult := getCookieBrowser()
+		fmt.Printf("\r")
+		s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
+		s.Suffix = " Obtaining token..."
+		s.Start()
+		tries := 0
+		var err error
+		for {
+			token, err = cookies.CookieToToken(cookieResult)
+			if err == nil {
+				break
+			}
+			if tries >= 10 {
+				cookieResult = ""
+				break
+			}
+			cookieResult = getCookieBrowser()
+			tries++
 		}
-		if tries >= 10 {
-			cookieResult = ""
-			break
-		}
-		cookieResult = getCookieBrowser()
-		tries++
+		s.Stop()
 	}
-	s.Stop()
 
 	// get token from cookie
 	if cookieResult == "" {
