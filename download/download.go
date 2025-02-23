@@ -42,7 +42,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
-		if msg.String() == "q" {
+		if msg.String() == "q" || msg.String() == "esc" || msg.String() == "ctrl+c" {
 			return m, tea.Quit
 		}
 	}
