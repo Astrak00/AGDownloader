@@ -165,6 +165,8 @@ type keymap struct {
 	Space key.Binding
 	Enter key.Binding
 	Quit  key.Binding
+	All   key.Binding
+	None  key.Binding
 }
 
 // initialModel sets up the model with defaults
@@ -194,6 +196,14 @@ func initialModel(label string, items []string) model {
 			Quit: key.NewBinding(
 				key.WithKeys("q", "ctrl+c"),
 				key.WithHelp("q/ctrl+c", "quit"),
+			),
+			All: key.NewBinding(
+				key.WithKeys("*", "right"),
+				key.WithHelp("*", "select all"),
+			),
+			None: key.NewBinding(
+				key.WithKeys("0", "left"),
+				key.WithHelp("0", "select none"),
 			),
 		},
 	}
@@ -233,6 +243,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Quit
 		case key.Matches(msg, m.keymap.Quit):
 			return m, tea.Quit
+
+		case key.Matches(msg, m.keymap.All):
+			for i := range m.items {
+				m.selected[i] = true
+			}
+		case key.Matches(msg, m.keymap.None):
+			for i := range m.items {
+				m.selected[i] = false
+			}
 		}
 
 	case tea.WindowSizeMsg:
@@ -267,7 +286,7 @@ func (m model) View() string {
 		// [ ] or [x], plus cursor arrow, plus the course name
 		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
 	}
-	s += "\n(↑/↓ or k/j to navigate, space to toggle, enter to confirm, q to quit)\n"
+	s += "\n(↑/↓ or k/j to navigate, space to toggle, enter to confirm, q to quit)\n(*/→ to select all, ←/0 to select none)"
 	return s
 }
 
