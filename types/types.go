@@ -13,6 +13,7 @@ type ProgramArgs struct {
 	DirPath       string
 	MaxGoroutines int
 	CoursesList   []string
+	WebUI         bool
 }
 
 // CHeck if all the arguments are assigned
