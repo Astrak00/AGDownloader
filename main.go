@@ -11,6 +11,7 @@ import (
 	token "github.com/Astrak00/AGDownloader/token"
 	types "github.com/Astrak00/AGDownloader/types"
 	u "github.com/Astrak00/AGDownloader/user"
+	webui "github.com/Astrak00/AGDownloader/webUI"
 	"github.com/fatih/color"
 )
 
@@ -44,8 +45,13 @@ func main() {
 		log.Fatalf("Error getting courses: %v\n", err)
 	}
 
+	var coursesList []types.Course
+	if arguments.WebUI {
+		coursesList = webui.ShowCourseWeb(courses)
+	} else {
+		coursesList = c.SelectCoursesInteractive(arguments.Language, arguments.CoursesList, courses)
+	}
 	// Create an interactive list so the user can select the courses to download
-	coursesList := c.SelectCoursesInteractive(arguments.Language, arguments.CoursesList, courses)
 
 	// Create a channel to store the files and another for the errors that may occur when listing all the resources to download
 	filesStoreChan := make(chan types.FileStore, len(courses)*100)
