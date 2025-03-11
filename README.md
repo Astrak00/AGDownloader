@@ -153,6 +153,8 @@ This will create an executable file called AGDownloader that you can run.
 
 ## Contributing
 
+Commits messages and PR titles must follow [Conventional Commits Specification](https://www.conventionalcommits.org/).
+
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
 ## Inspiration
