@@ -6,7 +6,9 @@ You can also indicate the course ID or names of the courses you want to download
 
 ## Demo
 
-![Demo](assets/demo.gif)
+<!-- Video -->
+https://github.com/user-attachments/assets/f5d0c692-27ba-4b43-8993-38c7a8946517
+
 
 ## Usage
 
@@ -41,16 +43,11 @@ The easiest way is through the cookie. The program will guide you through the pr
 2. Open the browser's developer tools (F12)
 3. Go to the console tab, and run the following command:
    ```js
-   console.log(
-     ("; " + document.cookie)
-       .split("; MoodleSessionag=")
-       .pop()
-       .split(";")
-       .shift()
-   );
+   console.log(("; " + document.cookie).split("; MoodleSessionag=").pop().split(";").shift());
    ```
 
-![Obtaining the cookie](assets/cookie.gif)
+<!-- Video -->
+https://github.com/user-attachments/assets/b32e1a62-0ea5-4492-838b-74648addadcf
 
 </details>
 
