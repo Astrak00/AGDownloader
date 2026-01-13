@@ -7,6 +7,7 @@ import (
 
 	"github.com/Astrak00/AGDownloader/cookies"
 	"github.com/Astrak00/AGDownloader/types"
+	webui "github.com/Astrak00/AGDownloader/webUI"
 )
 
 // ObtainToken gets the token from the saved file from a previous execution or asks the user for it
@@ -24,8 +25,12 @@ func ObtainToken() string {
 		return string(data)
 	}
 
-	// get token from cookie
-	cookie := cookies.AskForCookie()
+	// get token from cookie using web popup
+	fmt.Println("Opening browser to obtain cookie...")
+	cookie := webui.AskForCookieWeb()
+	if cookie == "" {
+		cookie = cookies.AskForCookie()
+	}
 	token := cookies.CookieToToken(cookie)
 
 	saveToken(token)
