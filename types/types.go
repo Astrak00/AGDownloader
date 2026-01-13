@@ -8,12 +8,13 @@ const (
 )
 
 type ProgramArgs struct {
-	Language      int
-	UserToken     string
-	DirPath       string
-	MaxGoroutines int
-	CoursesList   []string
-	WebUI         bool
+	Language         int
+	UserToken        string
+	DirPath          string
+	MaxGoroutines    int
+	CoursesList      []string
+	WebUI            bool
+	ParticipantsList bool
 }
 
 // CHeck if all the arguments are assigned

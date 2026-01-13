@@ -3,7 +3,10 @@ package files
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -133,4 +136,61 @@ func catalogFiles(courseName string, token string, files []types.File, dirPath s
 		// Send the file to the channel
 		filesStoreChan <- types.FileStore{FileName: file.FileName, FileURL: url, Dir: filePath}
 	}
+}
+
+func DownloadParticipantsList(courses []types.Course, token string) {
+	for _, course := range courses {
+
+		url := fmt.Sprintf("https://%s/soporte/listadeclase_exportar.php?wstoken=%s&id=%s&students=1&format=1", types.Domain, token, course.ID)
+
+		fmt.Println(url)
+		client := &http.Client{
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				// Prevent following redirects
+				return http.ErrUseLastResponse
+			},
+		}
+		resp, err := client.Get(url)
+		if err != nil {
+			log.Printf("failed to download course list for %s: %v", course.Name, err)
+			continue
+		}
+		defer resp.Body.Close()
+		fmt.Println(2)
+
+		if resp.StatusCode != 200 {
+			log.Printf("unexpected status code for %s: %d", course.Name, resp.StatusCode)
+			continue
+		}
+		fmt.Println(3)
+
+		fileName := fmt.Sprintf("%s.xlsx", strings.ReplaceAll(course.Name, "/", "-"))
+		filePath := filepath.Join("course_lists", fileName)
+		fmt.Println("fileName:", fileName)
+		fmt.Println("filePath:", filePath)
+
+		if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
+			log.Printf("failed to create directory for %s: %v", filePath, err)
+			continue
+		}
+		fmt.Println(4)
+
+		out, err := os.Create(filePath)
+		if err != nil {
+			log.Printf("failed to create file %s: %v", filePath, err)
+			continue
+		}
+		defer out.Close()
+		fmt.Println(5)
+
+		_, err = io.Copy(out, resp.Body)
+		if err != nil {
+			log.Printf("failed to save file %s: %v", filePath, err)
+		}
+		fmt.Println("Downloaded course list for", course.Name)
+
+		os.Exit(0) // TODO: remove this, it's just for testing
+
+	}
+
 }

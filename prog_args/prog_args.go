@@ -45,6 +45,7 @@ func ParseCLIArgs() types.ProgramArgs {
 	cores := pflag.Int("p", 0, "Number of cores to be used while downloading")
 	fast := pflag.Bool("fast", false, "Set MaxGoroutines to the number of files for fastest downloading")
 	webUI := pflag.Bool("web", false, "Select the courses using the web interface")
+	participantsList := pflag.Bool("pList", false, "Select weather you want to also download the participants list of the course")
 	var courses []string
 	pflag.StringSliceVar(&courses, "courses", []string{}, "Ids or names of the courses to be downloaded, enclosed in \", separated by spaces. \n\"all\" downloads all courses")
 
@@ -69,12 +70,13 @@ func ParseCLIArgs() types.ProgramArgs {
 	}
 
 	return types.ProgramArgs{
-		Language:      language,
-		UserToken:     *token,
-		DirPath:       *dir,
-		MaxGoroutines: *cores,
-		CoursesList:   courses,
-		WebUI:         *webUI,
+		Language:         language,
+		UserToken:        *token,
+		DirPath:          *dir,
+		MaxGoroutines:    *cores,
+		CoursesList:      courses,
+		WebUI:            *webUI,
+		ParticipantsList: *participantsList,
 	}
 }
 
@@ -100,11 +102,12 @@ func PromptMissingArgs(arguments types.ProgramArgs) types.ProgramArgs {
 	}
 
 	return types.ProgramArgs{
-		Language:      arguments.Language,
-		UserToken:     arguments.UserToken,
-		DirPath:       dirObtained,
-		MaxGoroutines: coresObtained,
-		CoursesList:   arguments.CoursesList,
-		WebUI:         arguments.WebUI,
+		Language:         arguments.Language,
+		UserToken:        arguments.UserToken,
+		DirPath:          dirObtained,
+		MaxGoroutines:    coresObtained,
+		CoursesList:      arguments.CoursesList,
+		WebUI:            arguments.WebUI,
+		ParticipantsList: arguments.ParticipantsList,
 	}
 }
