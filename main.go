@@ -34,9 +34,14 @@ func main() {
 
 	// Obtain the user information by logging in with the token
 	user, err := u.GetUserInfo(arguments.UserToken)
-	for err != nil {
+	retriesCounter := 0
+	for err != nil && retriesCounter < 3 {
 		user, err = u.GetUserInfo(arguments.UserToken)
-		log.Default().Printf("Error getting user info: %v\nTrying again", err)
+		retriesCounter++
+		log.Default().Printf("Error getting user info: %v\nTrying again. Attempt %d/3", err, retriesCounter)
+		if retriesCounter == 3 {
+			log.Fatalf("Error getting user info after 3 attempts")
+		}
 	}
 
 	// Obtain the courses the user is enrolled in
