@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"sync"
@@ -39,6 +40,20 @@ func processCourse(course types.Course, userToken string, dirPath string, errCha
 		courseName := strings.ReplaceAll(course.Name, "/", "-")
 		catalogFiles(courseName, userToken, files, dirPath, filesStoreChan)
 	}
+}
+
+func sanitizePath(path string) string {
+	if runtime.GOOS == "windows" {
+		invalidChars := []string{"<", ">", ":", "\"", "\\", "|", "?", "*"}
+		for _, char := range invalidChars {
+			path = strings.ReplaceAll(path, char, "_")
+		}
+		path = regexp.MustCompile(`\s*_\s*`).ReplaceAllString(path, "_")
+		path = regexp.MustCompile(`\s+`).ReplaceAllString(path, "_")
+		path = strings.TrimSpace(path)
+		path = strings.Trim(path, ".")
+	}
+	return path
 }
 
 // Parses the course and returns the files of type "file"
@@ -77,17 +92,21 @@ func getCourseContent(token, courseID string) ([]types.File, error) {
 			sectionName = removeTags(course.Summary)
 		}
 
+		if runtime.GOOS == "windows" {
+			sectionName = sanitizePath(sectionName)
+		}
+
 		for _, module := range course.Modules {
 			for _, content := range module.Contents {
 
 				switch content.Type {
 				case "file":
+					fileName := content.Filename
 					if runtime.GOOS == "windows" {
-						// Windows shits itself if the sectionName has trailing whitespace or `:`, don't ask me why (see #13)
-						sectionName = strings.Replace(strings.TrimSpace(sectionName), ":", "", -1)
+						fileName = sanitizePath(fileName)
 					}
 					filesPresentInCourse = append(filesPresentInCourse, types.File{
-						FileName: filepath.Join(sectionName, content.Filename),
+						FileName: filepath.Join(sectionName, fileName),
 						FileURL:  content.Fileurl,
 					})
 				default:
