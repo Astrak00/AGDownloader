@@ -23,6 +23,7 @@ type model struct {
 	completedFiles int32
 	currentFile    string
 	errs           []string
+	cancelled      bool
 }
 
 func (m model) Init() tea.Cmd {
@@ -43,6 +44,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		if msg.String() == "q" || msg.String() == "esc" || msg.String() == "ctrl+c" {
+			m.cancelled = true
 			return m, tea.Quit
 		}
 	}
@@ -156,9 +158,15 @@ func DownloadFiles(filesStoreChan <-chan types.FileStore, maxGoroutines int, cou
 		p.Send(tea.Quit())
 	}()
 
-	if _, err := p.Run(); err != nil {
+	finalModel, err := p.Run()
+	if err != nil {
 		log.Fatalf("Error: %v\n", err)
 	}
+
+	if finalModel.(model).cancelled {
+		os.Exit(0)
+	}
+
 	color.Green("Download completed successfully \n")
 }
 

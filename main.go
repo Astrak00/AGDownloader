@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	c "github.com/Astrak00/AGDownloader/courses"
 	download "github.com/Astrak00/AGDownloader/download"
@@ -16,6 +19,15 @@ import (
 )
 
 func main() {
+	// Set up global signal handling
+	go func() {
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+		<-sigChan
+		fmt.Println("\nReceived interrupt signal, exiting...")
+		os.Exit(0)
+	}()
+
 	// Parse the flags to get the language, user token, the path to save the downloaded files, maxGoroutines and courses list to download
 	arguments := prog_args.ParseCLIArgs()
 
