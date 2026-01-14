@@ -140,6 +140,9 @@ func checkboxesCourses(label string, opts []string) []string {
 
 	// Extract the selected items
 	if mFinal, ok := finalModel.(model); ok {
+		if mFinal.cancelled {
+			os.Exit(0)
+		}
 		return mFinal.selectedItems()
 	}
 	return nil
@@ -149,13 +152,14 @@ func checkboxesCourses(label string, opts []string) []string {
 // Below is a minimal Bubble Tea model for multi-select
 // ----------------------------------------------------
 type model struct {
-	label    string
-	cursor   int          // which item is currently highlighted
-	items    []string     // all course names
-	selected map[int]bool // track selected items by index
-	done     bool         // signals we've pressed Enter
-	viewport viewport.Model
-	keymap   keymap
+	label     string
+	cursor    int          // which item is currently highlighted
+	items     []string     // all course names
+	selected  map[int]bool // track selected items by index
+	done      bool         // signals we've pressed Enter
+	cancelled bool         // signals we've pressed Quit
+	viewport  viewport.Model
+	keymap    keymap
 }
 
 // Define key bindings we care about
@@ -242,6 +246,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		// Quit
 		case key.Matches(msg, m.keymap.Quit):
+			m.cancelled = true
 			return m, tea.Quit
 
 		case key.Matches(msg, m.keymap.All):

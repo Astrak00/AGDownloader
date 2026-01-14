@@ -29,9 +29,10 @@ var (
 )
 
 type model struct {
-	inputs  []textinput.Model
-	focused int
-	err     error
+	inputs    []textinput.Model
+	focused   int
+	err       error
+	cancelled bool
 }
 
 func AskForCookie() string {
@@ -41,6 +42,10 @@ func AskForCookie() string {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error starting app: %v\n", err)
 		os.Exit(1)
+	}
+
+	if model_out.(model).cancelled {
+		os.Exit(0)
 	}
 
 	return model_out.(model).inputs[authCookieIndex].Value()
@@ -70,9 +75,10 @@ func cookieModel() model {
 	}
 
 	return model{
-		inputs:  inputs,
-		focused: 0,
-		err:     nil,
+		inputs:    inputs,
+		focused:   0,
+		err:       nil,
+		cancelled: false,
 	}
 }
 
@@ -92,6 +98,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.nextInput()
 		case tea.KeyCtrlC, tea.KeyEsc, tea.KeyCtrlD:
+			m.cancelled = true
 			return m, tea.Quit
 		case tea.KeyShiftTab, tea.KeyCtrlP:
 			m.prevInput()

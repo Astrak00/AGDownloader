@@ -30,9 +30,10 @@ var (
 )
 
 type model struct {
-	inputs  []textinput.Model
-	focused int
-	err     error
+	inputs    []textinput.Model
+	focused   int
+	err       error
+	cancelled bool
 }
 
 // Validator functions to ensure valid input
@@ -91,9 +92,10 @@ func initialModel(dirStr *string, cores int) model {
 	inputs[corIota].Validate = corValidator
 
 	return model{
-		inputs:  inputs,
-		focused: focusedResult,
-		err:     nil,
+		inputs:    inputs,
+		focused:   focusedResult,
+		err:       nil,
+		cancelled: false,
 	}
 }
 
@@ -113,6 +115,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.nextInput()
 		case tea.KeyCtrlC, tea.KeyEsc, tea.KeyCtrlD:
+			m.cancelled = true
 			return m, tea.Quit
 		case tea.KeyShiftTab, tea.KeyCtrlP:
 			m.prevInput()

@@ -3,6 +3,7 @@ package prog_args
 import (
 	"fmt"
 	"log"
+	"os"
 	"regexp"
 	"strconv"
 
@@ -90,13 +91,20 @@ func PromptMissingArgs(arguments types.ProgramArgs) types.ProgramArgs {
 		log.Fatal(err)
 	}
 
+	if finalModel.(model).cancelled {
+		os.Exit(0)
+	}
+
 	dirObtained := finalModel.(model).inputs[dirIota].Value()
 	if dirObtained == "" {
 		dirObtained = "."
 	}
-	coresObtained, err := strconv.Atoi(finalModel.(model).inputs[corIota].Value())
+
+	coresInput := finalModel.(model).inputs[corIota].Value()
+	coresObtained, err := strconv.Atoi(coresInput)
 	if err != nil {
-		log.Fatal(err)
+		log.Default().Printf("Error converting cores input to integer: %v. Using 1 core instead", err)
+		coresObtained = 1
 	}
 
 	return types.ProgramArgs{
