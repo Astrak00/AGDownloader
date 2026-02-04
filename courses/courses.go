@@ -63,7 +63,6 @@ func GetCoursesByTimeline(token string, language int) (types.Courses, error) {
 		types.Webservice,
 		token,
 	)
-	fmt.Println(url)
 
 	jsonData := types.GetJson(url)
 
@@ -77,7 +76,7 @@ func GetCoursesByTimeline(token string, language int) (types.Courses, error) {
 	// Get the names and IDs of the courses
 	courses := make([]types.Course, 0, len(timelineParsed.Courses))
 	for _, course := range timelineParsed.Courses {
-		courseName := extractCourseNameByLanguage(course.Fullname, language)
+		courseName := extractCourseNameFromFullDisplay(course.Fullnamedisplay, language)
 		if !containsInvalidNames(courseName) {
 			courses = append(courses, types.Course{Name: courseName, ID: strconv.Itoa(course.ID)})
 		}
@@ -133,6 +132,84 @@ func extractCourseNameByLanguage(name string, lang int) string {
 
 	// If no separators are found, return the original name.
 	return name
+}
+
+// extractCourseNameFromFullDisplay extracts the course name from the fullnamedisplay field
+// fullnamedisplay format: "Spanish Name YY/YY-#C English Name YY/YY-S#"
+// Example: "Tecnología de Computadores 21/22-2C Computer Technology 21/22-S2"
+// This function extracts just the course name without the year/semester info
+func extractCourseNameFromFullDisplay(fullDisplay string, lang int) string {
+	// Separators that indicate the end of course name and start of year/semester
+	separators := []string{" 20", " 21", " 22", " 23", " 24", " 25", " 26", " 27", " 28", " 29"}
+
+	// Find the first occurrence of a year separator
+	firstYearIdx := -1
+	for _, sep := range separators {
+		if idx := strings.Index(fullDisplay, sep); idx != -1 {
+			if firstYearIdx == -1 || idx < firstYearIdx {
+				firstYearIdx = idx
+			}
+		}
+	}
+
+	// If no year separator found, return the original name
+	if firstYearIdx == -1 {
+		return fullDisplay
+	}
+
+	// Extract the part before the first year (Spanish name + year/semester + English name + year/semester)
+	// Example: "Tecnología de Computadores 21/22-2CComputer Technology 21/22-S2"
+	// We need to find the Spanish and English parts
+
+	// Find all year positions to split Spanish and English sections
+	spanishEnd := firstYearIdx
+
+	// Look for the separator between Spanish and English
+	// Pattern: Spanish Name YY/YY-#C English Name
+	// The separator is typically "-#C" followed by a capital letter (start of English name)
+	separatorPattern := []string{"-1C", "-2C", "-1S", "-2S"}
+	englishStart := -1
+
+	for _, sep := range separatorPattern {
+		if idx := strings.Index(fullDisplay, sep); idx != -1 && idx < len(fullDisplay)-len(sep) {
+			// Check if there's a capital letter or space after the separator
+			afterSep := idx + len(sep)
+			if afterSep < len(fullDisplay) {
+				// English name starts after the separator
+				englishStart = afterSep
+				spanishEnd = idx + len(sep)
+				break
+			}
+		}
+	}
+
+	if englishStart == -1 {
+		// Couldn't find the split, extract just the name before year
+		courseName := strings.TrimSpace(fullDisplay[:spanishEnd])
+		return courseName
+	}
+
+	// Extract Spanish or English name based on language preference
+	if lang == 1 { // Spanish
+		// Extract the part before the first year (which is the Spanish course name)
+		spanishName := strings.TrimSpace(fullDisplay[:firstYearIdx])
+		return spanishName
+	} else { // English
+		// Find where English name ends (before its year)
+		englishPart := fullDisplay[englishStart:]
+		englishEnd := -1
+		for _, sep := range separators {
+			if idx := strings.Index(englishPart, sep); idx != -1 {
+				if englishEnd == -1 || idx < englishEnd {
+					englishEnd = idx
+				}
+			}
+		}
+		if englishEnd != -1 {
+			return strings.TrimSpace(englishPart[:englishEnd])
+		}
+		return strings.TrimSpace(englishPart)
+	}
 }
 
 // SelectCoursesInteractive is the entry point for prompting the user:
