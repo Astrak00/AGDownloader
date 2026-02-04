@@ -10,6 +10,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	errorlog "github.com/Astrak00/AGDownloader/errorlog"
 	types "github.com/Astrak00/AGDownloader/types"
 	"github.com/fatih/color"
 
@@ -24,6 +25,7 @@ type model struct {
 	currentFile    string
 	errs           []string
 	cancelled      bool
+	errorLogger    *errorlog.ErrorLogger
 }
 
 func (m model) Init() tea.Cmd {
@@ -39,7 +41,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case errorMsg:
-		m.errs = append(m.errs, fmt.Sprintf("Error downloading %s: %v", msg.fileName, msg.err))
+		errStr := fmt.Sprintf("Error downloading %s: %v", msg.fileName, msg.err)
+		m.errs = append(m.errs, errStr)
+
+		// Log error to file
+		if m.errorLogger != nil {
+			m.errorLogger.LogErrorWithDetails(
+				errorlog.ErrorTypeDownload,
+				fmt.Sprintf("Failed to download file: %s", msg.fileName),
+				msg.err,
+				map[string]string{
+					"file":      msg.fileName,
+					"file_url":  msg.fileURL,
+					"file_path": msg.filePath,
+				},
+			)
+		}
 		return m, nil
 
 	case tea.KeyMsg:
@@ -97,6 +114,8 @@ type progressMsg struct {
 
 type errorMsg struct {
 	fileName string
+	fileURL  string
+	filePath string
 	err      error
 }
 
@@ -109,7 +128,7 @@ func repeat(char rune, count int) []rune {
 }
 
 // DownloadFiles orchestrates the file downloads and displays progress using Bubble Tea.
-func DownloadFiles(filesStoreChan <-chan types.FileStore, maxGoroutines int, courses []types.Course) {
+func DownloadFiles(filesStoreChan <-chan types.FileStore, maxGoroutines int, courses []types.Course, errLogger *errorlog.ErrorLogger) {
 	totalFiles := len(filesStoreChan)
 	if maxGoroutines == -1 {
 		maxGoroutines = totalFiles
@@ -124,6 +143,7 @@ func DownloadFiles(filesStoreChan <-chan types.FileStore, maxGoroutines int, cou
 	m := model{
 		totalFiles:  int32(totalFiles),
 		courseIDMap: courseIDMap,
+		errorLogger: errLogger,
 	}
 
 	if m.totalFiles == 0 {
@@ -146,7 +166,12 @@ func DownloadFiles(filesStoreChan <-chan types.FileStore, maxGoroutines int, cou
 				semaphore <- struct{}{}
 				defer func() { <-semaphore }()
 				if err := downloadFile(fileStore); err != nil {
-					p.Send(errorMsg{fileName: fileStore.FileName, err: err})
+					p.Send(errorMsg{
+						fileName: fileStore.FileName,
+						fileURL:  fileStore.FileURL,
+						filePath: fileStore.Dir,
+						err:      err,
+					})
 				} else {
 					p.Send(progressMsg{fileName: fileStore.FileName})
 				}

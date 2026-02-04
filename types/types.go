@@ -14,6 +14,7 @@ type ProgramArgs struct {
 	MaxGoroutines int
 	CoursesList   []string
 	WebUI         bool
+	Timeline      bool
 }
 
 // CHeck if all the arguments are assigned

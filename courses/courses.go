@@ -51,6 +51,42 @@ func GetCourses(token string, userID string, language int) (types.Courses, error
 	return courses, nil
 }
 
+// GetCoursesByTimeline obtains all courses (current, past, and future) using the timeline classification API
+// This API doesn't require a userID, only the wstoken
+// Returns a slice of courses
+func GetCoursesByTimeline(token string, language int) (types.Courses, error) {
+	fmt.Println("Fetching all courses (current, past, and future) from AulaGlobal...")
+
+	url := fmt.Sprintf(
+		"https://%s%s?wstoken=%s&wsfunction=core_course_get_enrolled_courses_by_timeline_classification&classification=all&moodlewsrestformat=json",
+		types.Domain,
+		types.Webservice,
+		token,
+	)
+	fmt.Println(url)
+
+	jsonData := types.GetJson(url)
+
+	// Parse the json
+	var timelineParsed types.TimelineCourses
+	err := json.Unmarshal(jsonData, &timelineParsed)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Get the names and IDs of the courses
+	courses := make([]types.Course, 0, len(timelineParsed.Courses))
+	for _, course := range timelineParsed.Courses {
+		courseName := extractCourseNameByLanguage(course.Fullname, language)
+		if !containsInvalidNames(courseName) {
+			courses = append(courses, types.Course{Name: courseName, ID: strconv.Itoa(course.ID)})
+		}
+	}
+
+	defer color.Green("Number of courses found: %d\n", len(courses))
+	return courses, nil
+}
+
 // Check if the name of the course contains invalid names that should not be downloaded
 func containsInvalidNames(name string) bool {
 	invalidCourseNames := []string{

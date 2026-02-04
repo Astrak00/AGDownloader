@@ -96,6 +96,32 @@ type WebUser []struct {
 	Visible                  int    `json:"visible"`
 }
 
+type TimelineCourses struct {
+	Courses []struct {
+		ID                       int    `json:"id"`
+		Fullname                 string `json:"fullname"`
+		Shortname                string `json:"shortname"`
+		Idnumber                 string `json:"idnumber"`
+		Summary                  string `json:"summary"`
+		Summaryformat            int    `json:"summaryformat"`
+		Startdate                int    `json:"startdate"`
+		Enddate                  int    `json:"enddate"`
+		Visible                  bool   `json:"visible"`
+		Showactivitydates        bool   `json:"showactivitydates"`
+		Showcompletionconditions any    `json:"showcompletionconditions"`
+		Fullnamedisplay          string `json:"fullnamedisplay"`
+		Viewurl                  string `json:"viewurl"`
+		Courseimage              string `json:"courseimage"`
+		Progress                 int    `json:"progress"`
+		Hasprogress              bool   `json:"hasprogress"`
+		Isfavourite              bool   `json:"isfavourite"`
+		Hidden                   bool   `json:"hidden"`
+		Showshortname            bool   `json:"showshortname"`
+		Coursecategory           string `json:"coursecategory"`
+	} `json:"courses"`
+	Nextoffset int `json:"nextoffset"`
+}
+
 func GetJson(URL string) []byte {
 	// Get the json from the URL
 	resp, err := http.Get(URL)

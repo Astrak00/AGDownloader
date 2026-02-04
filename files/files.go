@@ -10,11 +10,12 @@ import (
 	"strings"
 	"sync"
 
+	errorlog "github.com/Astrak00/AGDownloader/errorlog"
 	types "github.com/Astrak00/AGDownloader/types"
 )
 
 // ListAllResources Creates a list of all the resources to download
-func ListAllResources(courses []types.Course, userToken string, dirPath string, errChan chan error, filesStoreChan chan types.FileStore) {
+func ListAllResources(courses []types.Course, userToken string, dirPath string, errChan chan error, filesStoreChan chan types.FileStore, errLogger *errorlog.ErrorLogger) {
 	var wg sync.WaitGroup
 	for _, courseItem := range courses {
 		wg.Add(1)
@@ -22,7 +23,7 @@ func ListAllResources(courses []types.Course, userToken string, dirPath string, 
 			defer wg.Done()
 			// Passing chan <- types.FileStore(filesStoreChan) as a parameter to the function makes the chanel
 			// to be a parameter of the function, so it can be used inside the function and a send-only channel
-			processCourse(courseItem, userToken, dirPath, chan<- error(errChan), chan<- types.FileStore(filesStoreChan))
+			processCourse(courseItem, userToken, dirPath, chan<- error(errChan), chan<- types.FileStore(filesStoreChan), errLogger)
 		}(courseItem)
 	}
 
@@ -30,10 +31,23 @@ func ListAllResources(courses []types.Course, userToken string, dirPath string, 
 }
 
 // Parses the course for available files and sends them to the channel to be downloaded
-func processCourse(course types.Course, userToken string, dirPath string, errChan chan<- error, filesStoreChan chan<- types.FileStore) {
+func processCourse(course types.Course, userToken string, dirPath string, errChan chan<- error, filesStoreChan chan<- types.FileStore, errLogger *errorlog.ErrorLogger) {
 	files, err := getCourseContent(userToken, course.ID)
 	if err != nil {
 		errChan <- fmt.Errorf("error getting course content: %v", err)
+
+		// Log error to file
+		if errLogger != nil {
+			errLogger.LogErrorWithDetails(
+				errorlog.ErrorTypeCourseContent,
+				fmt.Sprintf("Failed to get content for course: %s", course.Name),
+				err,
+				map[string]string{
+					"course_id":   course.ID,
+					"course_name": course.Name,
+				},
+			)
+		}
 	}
 	if len(files) > 0 {
 		// Replace the "/" in the course name to avoid creating subdirectories
@@ -61,7 +75,7 @@ func sanitizePath(path string) string {
 // Scrapes the file names, urls and types with regex
 func getCourseContent(token, courseID string) ([]types.File, error) {
 	url := fmt.Sprintf("https://%s%s?wstoken=%s&wsfunction=core_course_get_contents&moodlewsrestformat=json&courseid=%s", types.Domain, types.Webservice, token, courseID)
-
+	fmt.Println(url)
 	// Get the json from the URL
 	jsonData := types.GetJson(url)
 
