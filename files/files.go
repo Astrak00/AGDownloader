@@ -75,7 +75,6 @@ func sanitizePath(path string) string {
 // Scrapes the file names, urls and types with regex
 func getCourseContent(token, courseID string) ([]types.File, error) {
 	url := fmt.Sprintf("https://%s%s?wstoken=%s&wsfunction=core_course_get_contents&moodlewsrestformat=json&courseid=%s", types.Domain, types.Webservice, token, courseID)
-	// fmt.Println(url)
 	// Get the json from the URL
 	jsonData := types.GetJson(url)
 

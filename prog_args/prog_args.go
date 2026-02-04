@@ -116,5 +116,6 @@ func PromptMissingArgs(arguments types.ProgramArgs) types.ProgramArgs {
 		MaxGoroutines: coresObtained,
 		CoursesList:   arguments.CoursesList,
 		WebUI:         arguments.WebUI,
+		Timeline:      arguments.Timeline,
 	}
 }
