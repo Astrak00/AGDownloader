@@ -35,6 +35,16 @@ func main() {
 	// Attribution of the program creator
 	color.Cyan("Program created by Astrak00 to download files from Aula Global at UC3M\n")
 
+	// In case the user has not provided a token though the cli, we try to obtain it from a file or ask the user for it
+	if arguments.UserToken == "" {
+		arguments.UserToken = token.ObtainToken()
+	}
+
+	// If there are missing arguments, we prompt the user for them
+	if !arguments.CheckAllAsigned() {
+		arguments = prog_args.PromptMissingArgs(arguments)
+	}
+
 	// Initialize error logger
 	errLogger, err := errorlog.New(arguments.DirPath)
 	if err != nil {
@@ -53,16 +63,6 @@ func main() {
 			}
 		}()
 		color.Green("Error logging initialized: %s\n", errLogger.GetLogFilePath())
-	}
-
-	// In case the user has not provided a token though the cli, we try to obtain it from a file or ask the user for it
-	if arguments.UserToken == "" {
-		arguments.UserToken = token.ObtainToken()
-	}
-
-	// If there are missing arguments, we prompt the user for them
-	if !arguments.CheckAllAsigned() {
-		arguments = prog_args.PromptMissingArgs(arguments)
 	}
 
 	// Obtain the user information by logging in with the token
@@ -115,6 +115,6 @@ func main() {
 	}
 
 	// Download all the files in the channel
-	download.DownloadFiles(filesStoreChan, arguments.MaxGoroutines, courses, errLogger)
+	download.DownloadFiles(filesStoreChan, arguments.MaxGoroutines, coursesList, errLogger)
 
 }

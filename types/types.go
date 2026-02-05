@@ -17,7 +17,7 @@ type ProgramArgs struct {
 	Timeline      bool
 }
 
-// CHeck if all the arguments are assigned
+// Check if all the arguments are assigned
 func (p ProgramArgs) CheckAllAsigned() bool {
 	if p.Language == 0 || p.UserToken == "" || p.DirPath == "" || p.MaxGoroutines == 0 {
 		return false

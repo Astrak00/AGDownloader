@@ -3,8 +3,8 @@ package courses
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -35,7 +35,7 @@ func GetCourses(token string, userID string, language int) (types.Courses, error
 	var userParsed types.WebUser
 	err := json.Unmarshal(jsonData, &userParsed)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	// Get the names and IDs of the courses
@@ -70,7 +70,7 @@ func GetCoursesByTimeline(token string, language int) (types.Courses, error) {
 	var timelineParsed types.TimelineCourses
 	err := json.Unmarshal(jsonData, &timelineParsed)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	// Get the names and IDs of the courses
@@ -139,17 +139,14 @@ func extractCourseNameByLanguage(name string, lang int) string {
 // Example: "Tecnología de Computadores 21/22-2C Computer Technology 21/22-S2"
 // This function extracts just the course name without the year/semester info
 func extractCourseNameFromFullDisplay(fullDisplay string, lang int) string {
-	// Separators that indicate the end of course name and start of year/semester
-	separators := []string{" 20", " 21", " 22", " 23", " 24", " 25", " 26", " 27", " 28", " 29"}
+	// Regex that indicates the end of course name and start of year/semester (e.g., " 21", " 22", etc.)
+	re := regexp.MustCompile(` 2\d`)
 
 	// Find the first occurrence of a year separator
 	firstYearIdx := -1
-	for _, sep := range separators {
-		if idx := strings.Index(fullDisplay, sep); idx != -1 {
-			if firstYearIdx == -1 || idx < firstYearIdx {
-				firstYearIdx = idx
-			}
-		}
+	loc := re.FindStringIndex(fullDisplay)
+	if loc != nil {
+		firstYearIdx = loc[0]
 	}
 
 	// If no year separator found, return the original name
@@ -177,7 +174,7 @@ func extractCourseNameFromFullDisplay(fullDisplay string, lang int) string {
 			if afterSep < len(fullDisplay) {
 				// English name starts after the separator
 				englishStart = afterSep
-				spanishEnd = idx + len(sep)
+				// spanishEnd = idx + len(sep)
 				break
 			}
 		}
@@ -198,12 +195,9 @@ func extractCourseNameFromFullDisplay(fullDisplay string, lang int) string {
 		// Find where English name ends (before its year)
 		englishPart := fullDisplay[englishStart:]
 		englishEnd := -1
-		for _, sep := range separators {
-			if idx := strings.Index(englishPart, sep); idx != -1 {
-				if englishEnd == -1 || idx < englishEnd {
-					englishEnd = idx
-				}
-			}
+		loc := re.FindStringIndex(englishPart)
+		if loc != nil {
+			englishEnd = loc[0]
 		}
 		if englishEnd != -1 {
 			return strings.TrimSpace(englishPart[:englishEnd])

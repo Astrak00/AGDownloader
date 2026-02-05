@@ -21,7 +21,7 @@ func ListAllResources(courses []types.Course, userToken string, dirPath string, 
 		wg.Add(1)
 		go func(courseItem types.Course) {
 			defer wg.Done()
-			// Passing chan <- types.FileStore(filesStoreChan) as a parameter to the function makes the chanel
+			// Passing chan <- types.FileStore(filesStoreChan) as a parameter to the function makes the channel
 			// to be a parameter of the function, so it can be used inside the function and a send-only channel
 			processCourse(courseItem, userToken, dirPath, chan<- error(errChan), chan<- types.FileStore(filesStoreChan), errLogger)
 		}(courseItem)
