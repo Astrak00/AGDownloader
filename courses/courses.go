@@ -3,8 +3,8 @@ package courses
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -35,13 +35,49 @@ func GetCourses(token string, userID string, language int) (types.Courses, error
 	var userParsed types.WebUser
 	err := json.Unmarshal(jsonData, &userParsed)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	// Get the names and IDs of the courses
 	courses := make([]types.Course, 0, len(userParsed))
 	for _, course := range userParsed {
 		courseName := extractCourseNameByLanguage(course.Fullname, language)
+		if !containsInvalidNames(courseName) {
+			courses = append(courses, types.Course{Name: courseName, ID: strconv.Itoa(course.ID)})
+		}
+	}
+
+	defer color.Green("Number of courses found: %d\n", len(courses))
+	return courses, nil
+}
+
+// GetCoursesByTimeline obtains all courses (current, past, and future) using the timeline classification API
+// This API doesn't require a userID, only the wstoken
+// Returns a slice of courses
+func GetCoursesByTimeline(token string, language int) (types.Courses, error) {
+	fmt.Println("Fetching all courses (current, past, and future) from AulaGlobal...")
+
+	url := fmt.Sprintf(
+		"https://%s%s?wstoken=%s&wsfunction=core_course_get_enrolled_courses_by_timeline_classification&classification=all&moodlewsrestformat=json",
+		types.Domain,
+		types.Webservice,
+		token,
+	)
+	fmt.Println("aaaa" + url)
+
+	jsonData := types.GetJson(url)
+
+	// Parse the json
+	var timelineParsed types.TimelineCourses
+	err := json.Unmarshal(jsonData, &timelineParsed)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the names and IDs of the courses
+	courses := make([]types.Course, 0, len(timelineParsed.Courses))
+	for _, course := range timelineParsed.Courses {
+		courseName := extractCourseNameFromFullDisplay(course.Fullnamedisplay, language)
 		if !containsInvalidNames(courseName) {
 			courses = append(courses, types.Course{Name: courseName, ID: strconv.Itoa(course.ID)})
 		}
@@ -97,6 +133,78 @@ func extractCourseNameByLanguage(name string, lang int) string {
 
 	// If no separators are found, return the original name.
 	return name
+}
+
+// extractCourseNameFromFullDisplay extracts the course name from the fullnamedisplay field
+// fullnamedisplay format: "Spanish Name YY/YY-#C English Name YY/YY-S#"
+// Example: "Tecnología de Computadores 21/22-2C Computer Technology 21/22-S2"
+// This function extracts just the course name without the year/semester info
+func extractCourseNameFromFullDisplay(fullDisplay string, lang int) string {
+	// Regex that indicates the end of course name and start of year/semester (e.g., " 21", " 22", etc.)
+	re := regexp.MustCompile(` 2\d`)
+
+	// Find the first occurrence of a year separator
+	firstYearIdx := -1
+	loc := re.FindStringIndex(fullDisplay)
+	if loc != nil {
+		firstYearIdx = loc[0]
+	}
+
+	// If no year separator found, return the original name
+	if firstYearIdx == -1 {
+		return fullDisplay
+	}
+
+	// Extract the part before the first year (Spanish name + year/semester + English name + year/semester)
+	// Example: "Tecnología de Computadores 21/22-2CComputer Technology 21/22-S2"
+	// We need to find the Spanish and English parts
+
+	// Find all year positions to split Spanish and English sections
+	spanishEnd := firstYearIdx
+
+	// Look for the separator between Spanish and English
+	// Pattern: Spanish Name YY/YY-#C English Name
+	// The separator is typically "-#C" followed by a capital letter (start of English name)
+	separatorPattern := []string{"-1C", "-2C", "-1S", "-2S"}
+	englishStart := -1
+
+	for _, sep := range separatorPattern {
+		if idx := strings.Index(fullDisplay, sep); idx != -1 && idx < len(fullDisplay)-len(sep) {
+			// Check if there's a capital letter or space after the separator
+			afterSep := idx + len(sep)
+			if afterSep < len(fullDisplay) {
+				// English name starts after the separator
+				englishStart = afterSep
+				// spanishEnd = idx + len(sep)
+				break
+			}
+		}
+	}
+
+	if englishStart == -1 {
+		// Couldn't find the split, extract just the name before year
+		courseName := strings.TrimSpace(fullDisplay[:spanishEnd])
+		return courseName
+	}
+
+	// Extract Spanish or English name based on language preference
+	if lang == 1 { // Spanish
+		// Extract the part before the first year (which is the Spanish course name)
+		spanishName := strings.TrimSpace(fullDisplay[:firstYearIdx])
+		return spanishName
+	} else { // English
+		// Find where English name ends (before its year)
+		englishPart := fullDisplay[englishStart:]
+		englishEnd := -1
+		loc := re.FindStringIndex(englishPart)
+		if loc != nil {
+			englishEnd = loc[0]
+		}
+		if englishEnd != -1 {
+			return strings.TrimSpace(englishPart[:englishEnd])
+		}
+		return strings.TrimSpace(englishPart)
+	}
 }
 
 // SelectCoursesInteractive is the entry point for prompting the user:

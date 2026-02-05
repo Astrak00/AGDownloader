@@ -9,6 +9,7 @@ import (
 
 	c "github.com/Astrak00/AGDownloader/courses"
 	download "github.com/Astrak00/AGDownloader/download"
+	errorlog "github.com/Astrak00/AGDownloader/errorlog"
 	"github.com/Astrak00/AGDownloader/files"
 	prog_args "github.com/Astrak00/AGDownloader/prog_args"
 	token "github.com/Astrak00/AGDownloader/token"
@@ -44,20 +45,47 @@ func main() {
 		arguments = prog_args.PromptMissingArgs(arguments)
 	}
 
-	// Obtain the user information by logging in with the token
-	user, err := u.GetUserInfo(arguments.UserToken)
-	retriesCounter := 0
-	for err != nil && retriesCounter < 3 {
-		user, err = u.GetUserInfo(arguments.UserToken)
-		retriesCounter++
-		log.Default().Printf("Error getting user info: %v\nTrying again. Attempt %d/3", err, retriesCounter)
-		if retriesCounter == 3 {
-			log.Fatalf("Error getting user info after 3 attempts")
-		}
+	// Initialize error logger
+	errLogger, err := errorlog.New(arguments.DirPath)
+	if err != nil {
+		log.Printf("Warning: Failed to initialize error logger: %v\n", err)
+		log.Println("Continuing without error logging...")
+		errLogger = nil
+	} else {
+		defer func() {
+			if errLogger != nil {
+				errCount := errLogger.GetErrorCount()
+				if errCount > 0 {
+					color.Yellow("\nTotal errors logged: %d\n", errCount)
+					color.Yellow("Error log saved to: %s\n", errLogger.GetLogFilePath())
+				}
+				errLogger.Close()
+			}
+		}()
+		color.Green("Error logging initialized: %s\n", errLogger.GetLogFilePath())
 	}
 
 	// Obtain the courses the user is enrolled in
-	courses, err := c.GetCourses(arguments.UserToken, user.UserID, arguments.Language)
+	var courses types.Courses
+	if arguments.Timeline {
+		// Use timeline API to get all courses (current, past, and future if available)
+		courses, err = c.GetCoursesByTimeline(arguments.UserToken, arguments.Language)
+	} else {
+		// Obtain the user information by logging in with the token
+		user, err := u.GetUserInfo(arguments.UserToken)
+		retriesCounter := 0
+		for err != nil && retriesCounter < 3 {
+			user, err = u.GetUserInfo(arguments.UserToken)
+			retriesCounter++
+			log.Default().Printf("Error getting user info: %v\nTrying again. Attempt %d/3", err, retriesCounter)
+			if retriesCounter == 3 {
+				log.Fatalf("Error getting user info after 3 attempts")
+			}
+		}
+
+		// Use standard API with userID
+		courses, err = c.GetCourses(arguments.UserToken, user.UserID, arguments.Language)
+	}
 	if err != nil {
 		log.Fatalf("Error getting courses: %v\n", err)
 	}
@@ -75,7 +103,7 @@ func main() {
 	errChan := make(chan error, len(courses))
 
 	// List all the resources to downloaded and send them to the channel
-	files.ListAllResources(coursesList, arguments.UserToken, arguments.DirPath, errChan, filesStoreChan)
+	files.ListAllResources(coursesList, arguments.UserToken, arguments.DirPath, errChan, filesStoreChan, errLogger)
 
 	close(errChan)
 	close(filesStoreChan)
@@ -87,6 +115,6 @@ func main() {
 	}
 
 	// Download all the files in the channel
-	download.DownloadFiles(filesStoreChan, arguments.MaxGoroutines, courses)
+	download.DownloadFiles(filesStoreChan, arguments.MaxGoroutines, coursesList, errLogger)
 
 }
