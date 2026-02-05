@@ -32,8 +32,6 @@ type model struct {
 	errs           []string
 	cancelled      bool
 	errorLogger    *errorlog.ErrorLogger
-	failedFiles    []types.FileStore
-	failedFilesMux sync.Mutex
 }
 
 func (m model) Init() tea.Cmd {
@@ -51,15 +49,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case errorMsg:
 		errStr := fmt.Sprintf("Error downloading %s: %v", msg.fileName, msg.err)
 		m.errs = append(m.errs, errStr)
-
-		// Add to failed files list for retry
-		m.failedFilesMux.Lock()
-		m.failedFiles = append(m.failedFiles, types.FileStore{
-			FileName: msg.fileName,
-			FileURL:  msg.fileURL,
-			Dir:      msg.filePath,
-		})
-		m.failedFilesMux.Unlock()
 
 		// Log error to file
 		if m.errorLogger != nil {
@@ -209,63 +198,7 @@ func DownloadFiles(filesStoreChan <-chan types.FileStore, maxGoroutines int, cou
 		os.Exit(0)
 	}
 
-	// Retry failed downloads
-	finalM := finalModel.(model)
-	if len(finalM.failedFiles) > 0 {
-		color.Yellow("\nRetrying %d failed downloads...\n", len(finalM.failedFiles))
-		retryFailedDownloads(finalM.failedFiles, maxGoroutines, finalM.errorLogger, p)
-	}
-
 	color.Green("Download completed successfully \n")
-}
-
-// retryFailedDownloads attempts to re-download files that failed on the first attempt
-func retryFailedDownloads(failedFiles []types.FileStore, maxGoroutines int, errLogger *errorlog.ErrorLogger, p *tea.Program) {
-	if len(failedFiles) == 0 {
-		return
-	}
-
-	var wg sync.WaitGroup
-	semaphore := make(chan struct{}, maxGoroutines)
-	successCount := int32(0)
-	failCount := int32(0)
-
-	for _, fileStore := range failedFiles {
-		wg.Add(1)
-		go func(fileStore types.FileStore) {
-			defer wg.Done()
-			semaphore <- struct{}{}
-			defer func() { <-semaphore }()
-
-			// Try downloading with retry logic
-			if err := downloadFileWithRetry(fileStore, 0); err != nil {
-				atomic.AddInt32(&failCount, 1)
-				if errLogger != nil {
-					errLogger.LogErrorWithDetails(
-						errorlog.ErrorTypeDownload,
-						fmt.Sprintf("Failed to download file after retries: %s", fileStore.FileName),
-						err,
-						map[string]string{
-							"file":      fileStore.FileName,
-							"file_url":  fileStore.FileURL,
-							"file_path": fileStore.Dir,
-							"retries":   "exhausted",
-						},
-					)
-				}
-			} else {
-				atomic.AddInt32(&successCount, 1)
-			}
-		}(fileStore)
-	}
-	wg.Wait()
-
-	if successCount > 0 {
-		color.Green("Successfully downloaded %d files on retry\n", successCount)
-	}
-	if failCount > 0 {
-		color.Red("Failed to download %d files even after retries\n", failCount)
-	}
 }
 
 // downloadFileWithRetry attempts to download a file with exponential backoff retry logic
