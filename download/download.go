@@ -192,7 +192,7 @@ func DownloadFiles(filesStoreChan <-chan types.FileStore, maxGoroutines int, cou
 		log.Fatalf("Error: %v\n", err)
 	}
 
-	if m, ok := finalModel.(model); ok && m.cancelled {
+	if finalM, ok := finalModel.(model); ok && finalM.cancelled {
 		os.Exit(0)
 	}
 
