@@ -46,7 +46,7 @@ func ShowCourseWeb(courses []types.Course) []types.Course {
 
 		correctResponseByte := []byte(correctResponseHTML)
 		if _, err := w.Write(correctResponseByte); err != nil {
-			http.Error(w, "Error writing response", http.StatusInternalServerError)
+			http.Error(w, "Error writing course selection confirmation response", http.StatusInternalServerError)
 			return
 		}
 
@@ -77,7 +77,7 @@ func formHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	courseSelectorHTMLByte := []byte(courseSelectorHTMLStart)
 	if _, err := w.Write(courseSelectorHTMLByte); err != nil {
-		http.Error(w, "Error writing response", http.StatusInternalServerError)
+		http.Error(w, "Error writing course selector header", http.StatusInternalServerError)
 		return
 	}
 
@@ -92,7 +92,7 @@ func formHandler(w http.ResponseWriter, r *http.Request) {
 
 	courseSelectorHTMLByte = []byte(courseSelectorHTMLEnd)
 	if _, err := w.Write(courseSelectorHTMLByte); err != nil {
-		http.Error(w, "Error writing response", http.StatusInternalServerError)
+		http.Error(w, "Error writing course selector footer", http.StatusInternalServerError)
 		return
 	}
 }
