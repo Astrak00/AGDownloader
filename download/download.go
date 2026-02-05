@@ -134,7 +134,18 @@ func repeat(char rune, count int) []rune {
 
 // DownloadFiles orchestrates the file downloads and displays progress using Bubble Tea.
 func DownloadFiles(filesStoreChan <-chan types.FileStore, maxGoroutines int, courses []types.Course, errLogger *errorlog.ErrorLogger) {
-	totalFiles := len(filesStoreChan)
+	// First, collect all files from the channel to count them
+	var filesList []types.FileStore
+	for fileStore := range filesStoreChan {
+		filesList = append(filesList, fileStore)
+	}
+
+	totalFiles := len(filesList)
+	if totalFiles == 0 {
+		color.Red("No files to download\n")
+		return
+	}
+
 	if maxGoroutines == -1 {
 		maxGoroutines = totalFiles
 	}
@@ -142,11 +153,6 @@ func DownloadFiles(filesStoreChan <-chan types.FileStore, maxGoroutines int, cou
 	m := model{
 		totalFiles:  int32(totalFiles),
 		errorLogger: errLogger,
-	}
-
-	if m.totalFiles == 0 {
-		color.Red("No files to download\n")
-		return
 	}
 
 	// Create the Bubble Tea program
@@ -157,7 +163,7 @@ func DownloadFiles(filesStoreChan <-chan types.FileStore, maxGoroutines int, cou
 		var wg sync.WaitGroup
 		semaphore := make(chan struct{}, maxGoroutines)
 
-		for fileStore := range filesStoreChan {
+		for _, fileStore := range filesList {
 			wg.Add(1)
 			go func(fileStore types.FileStore) {
 				defer wg.Done()
@@ -186,7 +192,7 @@ func DownloadFiles(filesStoreChan <-chan types.FileStore, maxGoroutines int, cou
 		log.Fatalf("Error: %v\n", err)
 	}
 
-	if finalModel.(model).cancelled {
+	if m, ok := finalModel.(model); ok && m.cancelled {
 		os.Exit(0)
 	}
 

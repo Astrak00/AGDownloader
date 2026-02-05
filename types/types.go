@@ -18,7 +18,7 @@ type ProgramArgs struct {
 }
 
 // Check if all the arguments are assigned
-func (p ProgramArgs) CheckAllAsigned() bool {
+func (p ProgramArgs) CheckAllAssigned() bool {
 	if p.Language == 0 || p.UserToken == "" || p.DirPath == "" || p.MaxGoroutines == 0 {
 		return false
 	}

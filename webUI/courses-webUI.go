@@ -45,11 +45,18 @@ func ShowCourseWeb(courses []types.Course) []types.Course {
 		w.Header().Set("Content-Type", "text/html")
 
 		correctResponseByte := []byte(correctResponseHTML)
-		w.Write(correctResponseByte)
+		if _, err := w.Write(correctResponseByte); err != nil {
+			http.Error(w, "Error writing response", http.StatusInternalServerError)
+			return
+		}
 
 	})
 
-	go http.ListenAndServe(":8888", nil)
+	go func() {
+		if err := http.ListenAndServe(":8888", nil); err != nil {
+			fmt.Println("Server error:", err)
+		}
+	}()
 
 	// Wait for the selected courses.
 	selected := <-selectedCourses
@@ -69,7 +76,10 @@ func ShowCourseWeb(courses []types.Course) []types.Course {
 func formHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	courseSelectorHTMLByte := []byte(courseSelectorHTMLStart)
-	w.Write(courseSelectorHTMLByte)
+	if _, err := w.Write(courseSelectorHTMLByte); err != nil {
+		http.Error(w, "Error writing response", http.StatusInternalServerError)
+		return
+	}
 
 	// Loop through the letters A-Z to create a checkbox for each.
 	for _, course := range courseList {
@@ -81,5 +91,8 @@ func formHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	courseSelectorHTMLByte = []byte(courseSelectorHTMLEnd)
-	w.Write(courseSelectorHTMLByte)
+	if _, err := w.Write(courseSelectorHTMLByte); err != nil {
+		http.Error(w, "Error writing response", http.StatusInternalServerError)
+		return
+	}
 }

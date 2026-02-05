@@ -37,18 +37,18 @@ func GetUserInfo(token string) (types.UserInfo, error) {
 
 	// Find the fullname key and value
 	fullName := regexp.MustCompile(`<KEY name="fullname"><VALUE>([^<]+)</VALUE>`)
-	maches := fullName.FindStringSubmatch(string(body))
-	if len(maches) >= 1 {
-		userInfo.FullName = maches[1]
+	matches := fullName.FindStringSubmatch(string(body))
+	if len(matches) >= 1 {
+		userInfo.FullName = matches[1]
 	} else {
 		color.Red("Fullname not found\n")
 	}
 
 	// Find the userid key and value
 	userID := regexp.MustCompile(`<KEY name="userid"><VALUE>([^<]+)</VALUE>`)
-	maches = userID.FindStringSubmatch(string(body))
-	if len(maches) > 1 {
-		userInfo.UserID = maches[1]
+	matches = userID.FindStringSubmatch(string(body))
+	if len(matches) > 1 {
+		userInfo.UserID = matches[1]
 	} else {
 		color.Red("UserID not found\n")
 	}

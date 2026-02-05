@@ -14,14 +14,14 @@ const URLToken = "https://aulaglobal.uc3m.es/admin/tool/mobile/launch.php?servic
 
 func CookieToToken(cookie string) string {
 	// This function will convert the cookie to the token
-	_, err := getToken(cookie)
-	if err == nil {
-		fmt.Println("Error:", err)
-		return ""
-	}
-	token, shouldNotReturn := extractTokenFromError(err)
-	if shouldNotReturn {
-		return ""
+	token, err := getToken(cookie)
+	if err != nil {
+		// If direct method fails, try extracting from error
+		token, shouldNotReturn := extractTokenFromError(err)
+		if shouldNotReturn {
+			return ""
+		}
+		return token
 	}
 	return token
 }
