@@ -15,7 +15,7 @@ import (
 )
 
 // ListAllResources Creates a list of all the resources to download
-func ListAllResources(courses []types.Course, userToken string, dirPath string, errChan chan error, filesStoreChan chan types.FileStore, errLogger *errorlog.ErrorLogger) {
+func ListAllResources(courses []types.Course, userToken string, dirPath string, include []string, exclude []string, errChan chan error, filesStoreChan chan types.FileStore, errLogger *errorlog.ErrorLogger) {
 	var wg sync.WaitGroup
 	for _, courseItem := range courses {
 		wg.Add(1)
@@ -23,7 +23,7 @@ func ListAllResources(courses []types.Course, userToken string, dirPath string, 
 			defer wg.Done()
 			// Passing chan <- types.FileStore(filesStoreChan) as a parameter to the function makes the channel
 			// to be a parameter of the function, so it can be used inside the function and a send-only channel
-			processCourse(courseItem, userToken, dirPath, chan<- error(errChan), chan<- types.FileStore(filesStoreChan), errLogger)
+			processCourse(courseItem, userToken, dirPath, include, exclude, chan<- error(errChan), chan<- types.FileStore(filesStoreChan), errLogger)
 		}(courseItem)
 	}
 
@@ -31,7 +31,7 @@ func ListAllResources(courses []types.Course, userToken string, dirPath string, 
 }
 
 // Parses the course for available files and sends them to the channel to be downloaded
-func processCourse(course types.Course, userToken string, dirPath string, errChan chan<- error, filesStoreChan chan<- types.FileStore, errLogger *errorlog.ErrorLogger) {
+func processCourse(course types.Course, userToken string, dirPath string, include []string, exclude []string, errChan chan<- error, filesStoreChan chan<- types.FileStore, errLogger *errorlog.ErrorLogger) {
 	files, err := getCourseContent(userToken, course.ID)
 	if err != nil {
 		errChan <- fmt.Errorf("error getting course content: %v", err)
@@ -54,7 +54,7 @@ func processCourse(course types.Course, userToken string, dirPath string, errCha
 	if len(files) > 0 {
 		// Replace the "/" in the course name to avoid creating subdirectories
 		courseName := strings.ReplaceAll(course.Name, "/", "-")
-		catalogFiles(courseName, userToken, files, dirPath, filesStoreChan)
+		catalogFiles(courseName, userToken, files, dirPath, include, exclude, filesStoreChan)
 	}
 }
 
@@ -159,12 +159,50 @@ func removeTags(s string) string {
 }
 
 // Formats the files to be downloaded, adding the course name and sends them to the channel
-func catalogFiles(courseName string, token string, files []types.File, dirPath string, filesStoreChan chan<- types.FileStore) {
+func catalogFiles(courseName string, token string, files []types.File, dirPath string, include []string, exclude []string, filesStoreChan chan<- types.FileStore) {
 	for _, file := range files {
+		if !shouldDownload(file.FileName, include, exclude) {
+			continue
+		}
 		url := file.FileURL + "&token=" + token
 		filePath := filepath.Join(dirPath, courseName, file.FileName)
 
 		// Send the file to the channel
 		filesStoreChan <- types.FileStore{FileName: file.FileName, FileURL: url, Dir: filePath}
 	}
+}
+
+func shouldDownload(fileName string, include []string, exclude []string) bool {
+	if len(include) == 0 && len(exclude) == 0 {
+		return true
+	}
+	ext := strings.ToLower(filepath.Ext(fileName))
+	if len(ext) > 0 && ext[0] == '.' {
+		ext = ext[1:]
+	}
+
+	// Check include list
+	if len(include) > 0 {
+		found := false
+		for _, inc := range include {
+			if strings.ToLower(inc) == ext {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+
+	// Check exclude list
+	if len(exclude) > 0 {
+		for _, exc := range exclude {
+			if strings.ToLower(exc) == ext {
+				return false
+			}
+		}
+	}
+
+	return true
 }

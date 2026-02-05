@@ -103,7 +103,7 @@ func main() {
 	errChan := make(chan error, len(courses))
 
 	// List all the resources to downloaded and send them to the channel
-	files.ListAllResources(coursesList, arguments.UserToken, arguments.DirPath, errChan, filesStoreChan, errLogger)
+	files.ListAllResources(coursesList, arguments.UserToken, arguments.DirPath, arguments.IncludedExtensions, arguments.ExcludedExtensions, errChan, filesStoreChan, errLogger)
 
 	close(errChan)
 	close(filesStoreChan)
