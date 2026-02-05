@@ -119,7 +119,6 @@ type TimelineCourses struct {
 		Showshortname            bool   `json:"showshortname"`
 		Coursecategory           string `json:"coursecategory"`
 	} `json:"courses"`
-	Nextoffset int `json:"nextoffset"`
 }
 
 func GetJson(URL string) []byte {

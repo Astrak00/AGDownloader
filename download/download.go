@@ -26,7 +26,6 @@ const (
 
 type model struct {
 	totalFiles     int32
-	courseIDMap    map[string]string
 	completedFiles int32
 	currentFile    string
 	errs           []string
@@ -140,15 +139,8 @@ func DownloadFiles(filesStoreChan <-chan types.FileStore, maxGoroutines int, cou
 		maxGoroutines = totalFiles
 	}
 
-	// Convert the courses to a map for easy lookup
-	courseIDMap := make(map[string]string)
-	for _, course := range courses {
-		courseIDMap[course.ID] = course.Name
-	}
-
 	m := model{
 		totalFiles:  int32(totalFiles),
-		courseIDMap: courseIDMap,
 		errorLogger: errLogger,
 	}
 

@@ -65,24 +65,24 @@ func main() {
 		color.Green("Error logging initialized: %s\n", errLogger.GetLogFilePath())
 	}
 
-	// Obtain the user information by logging in with the token
-	user, err := u.GetUserInfo(arguments.UserToken)
-	retriesCounter := 0
-	for err != nil && retriesCounter < 3 {
-		user, err = u.GetUserInfo(arguments.UserToken)
-		retriesCounter++
-		log.Default().Printf("Error getting user info: %v\nTrying again. Attempt %d/3", err, retriesCounter)
-		if retriesCounter == 3 {
-			log.Fatalf("Error getting user info after 3 attempts")
-		}
-	}
-
 	// Obtain the courses the user is enrolled in
 	var courses types.Courses
 	if arguments.Timeline {
-		// Use timeline API to get all courses (current, past, and future)
+		// Use timeline API to get all courses (current, past, and future if available)
 		courses, err = c.GetCoursesByTimeline(arguments.UserToken, arguments.Language)
 	} else {
+		// Obtain the user information by logging in with the token
+		user, err := u.GetUserInfo(arguments.UserToken)
+		retriesCounter := 0
+		for err != nil && retriesCounter < 3 {
+			user, err = u.GetUserInfo(arguments.UserToken)
+			retriesCounter++
+			log.Default().Printf("Error getting user info: %v\nTrying again. Attempt %d/3", err, retriesCounter)
+			if retriesCounter == 3 {
+				log.Fatalf("Error getting user info after 3 attempts")
+			}
+		}
+
 		// Use standard API with userID
 		courses, err = c.GetCourses(arguments.UserToken, user.UserID, arguments.Language)
 	}

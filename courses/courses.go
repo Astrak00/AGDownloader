@@ -63,6 +63,7 @@ func GetCoursesByTimeline(token string, language int) (types.Courses, error) {
 		types.Webservice,
 		token,
 	)
+	fmt.Println("aaaa" + url)
 
 	jsonData := types.GetJson(url)
 

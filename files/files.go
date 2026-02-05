@@ -48,6 +48,8 @@ func processCourse(course types.Course, userToken string, dirPath string, errCha
 				},
 			)
 		}
+		// If there's an error, we skip processing this course and move on to the next one
+		return
 	}
 	if len(files) > 0 {
 		// Replace the "/" in the course name to avoid creating subdirectories
