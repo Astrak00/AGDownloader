@@ -207,7 +207,7 @@ func downloadFileWithRetry(fileStore types.FileStore, attemptNum int) error {
 	if err != nil && attemptNum < maxRetries {
 		// Calculate backoff duration (exponential backoff)
 		backoffDuration := initialBackoff * time.Duration(1<<uint(attemptNum))
-		log.Printf("Download failed for %s (attempt %d/%d), retrying in %v: %v\n",
+		log.Printf("Download failed for %s (retry %d of %d), retrying in %v: %v\n",
 			fileStore.FileName, attemptNum+1, maxRetries, backoffDuration, err)
 
 		time.Sleep(backoffDuration)
