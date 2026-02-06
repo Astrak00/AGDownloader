@@ -45,6 +45,18 @@ func main() {
 		arguments = prog_args.PromptMissingArgs(arguments)
 	}
 
+	// Create a map like build map[string]struct{} sets of normalized extensions) and then do O(1) lookups per file to check if the extension is in the include or exclude list. This is more efficient than iterating over the slices for each file.
+	// Create a map for included extensions
+	includeMap := make(types.FileIncludeExcludeMap)
+	for _, ext := range arguments.IncludedExtensions {
+		includeMap[ext] = struct{}{}
+	}
+	// Create a map for excluded extensions
+	excludeMap := make(types.FileIncludeExcludeMap)
+	for _, ext := range arguments.ExcludedExtensions {
+		excludeMap[ext] = struct{}{}
+	}
+
 	// Initialize error logger
 	errLogger, err := errorlog.New(arguments.DirPath)
 	if err != nil {
@@ -103,7 +115,7 @@ func main() {
 	errChan := make(chan error, len(courses))
 
 	// List all the resources to downloaded and send them to the channel
-	files.ListAllResources(coursesList, arguments.UserToken, arguments.DirPath, arguments.IncludedExtensions, arguments.ExcludedExtensions, errChan, filesStoreChan, errLogger)
+	files.ListAllResources(coursesList, arguments.UserToken, arguments.DirPath, &includeMap, &excludeMap, errChan, filesStoreChan, errLogger)
 
 	close(errChan)
 	close(filesStoreChan)

@@ -59,3 +59,5 @@ type UserInfo struct {
 	FullName string
 	UserID   string
 }
+
+type FileIncludeExcludeMap map[string]struct{}
