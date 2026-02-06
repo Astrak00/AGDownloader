@@ -8,13 +8,15 @@ const (
 )
 
 type ProgramArgs struct {
-	Language      int
-	UserToken     string
-	DirPath       string
-	MaxGoroutines int
-	CoursesList   []string
-	WebUI         bool
-	Timeline      bool
+	Language           int
+	UserToken          string
+	DirPath            string
+	MaxGoroutines      int
+	CoursesList        []string
+	WebUI              bool
+	Timeline           bool
+	IncludedExtensions []string
+	ExcludedExtensions []string
 }
 
 // Check if all the arguments are assigned
@@ -57,3 +59,5 @@ type UserInfo struct {
 	FullName string
 	UserID   string
 }
+
+type FileIncludeExcludeMap map[string]struct{}
