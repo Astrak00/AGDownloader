@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/fatih/color"
 
@@ -260,14 +259,15 @@ func checkboxesCourses(label string, opts []string) []string {
 // Below is a minimal Bubble Tea model for multi-select
 // ----------------------------------------------------
 type model struct {
-	label     string
-	cursor    int          // which item is currently highlighted
-	items     []string     // all course names
-	selected  map[int]bool // track selected items by index
-	done      bool         // signals we've pressed Enter
-	cancelled bool         // signals we've pressed Quit
-	viewport  viewport.Model
-	keymap    keymap
+	label          string
+	cursor         int          // which item is currently highlighted
+	items          []string     // all course names
+	selected       map[int]bool // track selected items by index
+	done           bool         // signals we've pressed Enter
+	cancelled      bool         // signals we've pressed Quit
+	viewportTop    int          // first visible line in the viewport
+	terminalHeight int          // height of terminal for scrolling
+	keymap         keymap
 }
 
 // Define key bindings we care about
@@ -284,10 +284,12 @@ type keymap struct {
 // initialModel sets up the model with defaults
 func initialModel(label string, items []string) model {
 	m := model{
-		label:    label,
-		items:    items,
-		selected: make(map[int]bool),
-		cursor:   0,
+		label:          label,
+		items:          items,
+		selected:       make(map[int]bool),
+		cursor:         0,
+		viewportTop:    0,
+		terminalHeight: 20, // Default, will be updated on WindowSizeMsg
 		keymap: keymap{
 			Up: key.NewBinding(
 				key.WithKeys("up", "k"),
@@ -320,7 +322,6 @@ func initialModel(label string, items []string) model {
 		},
 	}
 
-	m.viewport = viewport.New(0, 0)
 	return m
 }
 
@@ -339,11 +340,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keymap.Up):
 			if m.cursor > 0 {
 				m.cursor--
+				m.adjustViewportForCursor()
 			}
 		// Move cursor down
 		case key.Matches(msg, m.keymap.Down):
 			if m.cursor < len(m.items)-1 {
 				m.cursor++
+				m.adjustViewportForCursor()
 			}
 		// Toggle selection
 		case key.Matches(msg, m.keymap.Space):
@@ -368,12 +371,36 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.WindowSizeMsg:
-		// If the window resizes, update viewport size
-		m.viewport.Width = msg.Width
-		m.viewport.Height = msg.Height
+		// Reserve space for label (1 line), help text (2 lines), and some padding
+		headerHeight := 1
+		footerHeight := 2
+		m.terminalHeight = msg.Height - headerHeight - footerHeight
+		if m.terminalHeight < 5 {
+			m.terminalHeight = 5 // Minimum height
+		}
+		m.adjustViewportForCursor()
 	}
 
 	return m, nil
+}
+
+// adjustViewportForCursor adjusts the viewport scroll position so the cursor is always visible
+func (m *model) adjustViewportForCursor() {
+	// If cursor is above the viewport, scroll up
+	if m.cursor < m.viewportTop {
+		m.viewportTop = m.cursor
+	}
+
+	// If cursor is below the viewport, scroll down
+	viewportBottom := m.viewportTop + m.terminalHeight - 1
+	if m.cursor > viewportBottom {
+		m.viewportTop = m.cursor - m.terminalHeight + 1
+	}
+
+	// Ensure viewportTop doesn't go negative
+	if m.viewportTop < 0 {
+		m.viewportTop = 0
+	}
 }
 
 // View renders the UI each time Update is called.
@@ -385,7 +412,14 @@ func (m model) View() string {
 
 	s := m.label + "\n"
 
-	for i, choice := range m.items {
+	// Calculate visible range
+	viewportBottom := m.viewportTop + m.terminalHeight
+	if viewportBottom > len(m.items) {
+		viewportBottom = len(m.items)
+	}
+
+	// Render only the visible items
+	for i := m.viewportTop; i < viewportBottom; i++ {
 		cursor := " " // no cursor
 		if m.cursor == i {
 			cursor = ">" // highlight the current line
@@ -397,9 +431,11 @@ func (m model) View() string {
 		}
 
 		// [ ] or [x], plus cursor arrow, plus the course name
-		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
+		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, m.items[i])
 	}
-	s += "\n(↑/↓ or k/j to navigate, space to toggle, enter to confirm, q to quit)\n(*/→ to select all, ←/0 to select none)"
+
+	s += "\n(↑/↓ or k/j to navigate, space to toggle, enter to confirm, q to quit)\n"
+	s += "(*/→ to select all, ←/0 to select none)"
 	return s
 }
 
