@@ -62,17 +62,13 @@ func cookieValidator(s string) error {
 
 func cookieModel() model {
 	var inputs []textinput.Model = make([]textinput.Model, 1)
-	focusSet := false
 	inputs[authCookieIndex] = textinput.New()
 	inputs[authCookieIndex].Placeholder = "AulaGlobal auth cookie"
 	inputs[authCookieIndex].CharLimit = 32
 	inputs[authCookieIndex].Width = 32
 	inputs[authCookieIndex].Prompt = ""
 	inputs[authCookieIndex].Validate = cookieValidator
-	if !focusSet {
-		inputs[authCookieIndex].Focus()
-		focusSet = true
-	}
+	inputs[authCookieIndex].Focus()
 
 	return model{
 		inputs:    inputs,

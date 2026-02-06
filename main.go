@@ -41,7 +41,7 @@ func main() {
 	}
 
 	// If there are missing arguments, we prompt the user for them
-	if !arguments.CheckAllAsigned() {
+	if !arguments.CheckAllAssigned() {
 		arguments = prog_args.PromptMissingArgs(arguments)
 	}
 
