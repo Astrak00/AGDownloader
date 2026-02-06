@@ -47,8 +47,8 @@ func ParseCLIArgs() types.ProgramArgs {
 	fast := pflag.Bool("fast", false, "Set MaxGoroutines to the number of files for fastest downloading")
 	webUI := pflag.Bool("web", false, "Select the courses using the web interface")
 	timeline := pflag.Bool("timeline", false, "Fetch all courses (current, past, and future) using timeline classification API")
-	include := pflag.StringSlice("include", []string{}, "Only download files with these extensions (e.g., pdf,pptx)")
-	exclude := pflag.StringSlice("exclude", []string{}, "Do not download files with these extensions (e.g., mkv,mp4)")
+	include := pflag.StringSlice("include", []string{}, "Only download files with these extensions (e.g., pdf,pptx). Separate the extensions with commas")
+	exclude := pflag.StringSlice("exclude", []string{}, "Do not download files with these extensions (e.g., mkv,mp4). Separate the extensions with commas")
 	var courses []string
 	pflag.StringSliceVar(&courses, "courses", []string{}, "Ids or names of the courses to be downloaded, enclosed in \", separated by spaces. \n\"all\" downloads all courses")
 
